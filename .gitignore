@@ -1,9 +1,10 @@
 # Data & artifacts (dataset re-downloads from HF Hub)
-data/
-results/
+/data/
+/results/
 wandb/
 outputs/
-checkpoints/
+/checkpoints/
+/space/precomputed/
 *.hdf5
 *.ckpt
 

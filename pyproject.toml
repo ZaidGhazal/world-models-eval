@@ -36,6 +36,7 @@ dependencies = [
     "scipy==1.15.3",
     "plotly==6.8.0",
     "gradio==6.19.0",
+    "lpips==0.1.4",
 ]
 # NOTE: LIBERO is vendored at third_party/LIBERO and must be installed with:
 #   pip install -e ./third_party/LIBERO --config-settings editable_mode=compat --no-deps

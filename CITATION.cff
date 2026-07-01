@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use DreamGrasp, please cite it as below, along with the prior work it builds on (WorldEval arXiv:2505.19017, WPE arXiv:2506.00613, Ctrl-World arXiv:2510.10125, SIMPLER arXiv:2405.05941, LIBERO arXiv:2306.03310)."
+title: "DreamGrasp: How Good Must a World Model Be Before You Can Trust It to Evaluate Robot Policies?"
+authors:
+  - family-names: Ghazal
+    given-names: Zaid
+year: 2026
+url: "https://github.com/zaid-ghazal/dreamgrasp"
+license: Apache-2.0

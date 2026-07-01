@@ -13,7 +13,6 @@ print(f"MUJOCO_GL={os.environ.get('MUJOCO_GL', '<unset — platform default>')}"
 
 def smoke_libero_render() -> None:
     import numpy as np
-
     from libero.libero import benchmark, get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
 
@@ -37,7 +36,6 @@ def smoke_libero_render() -> None:
 
 def smoke_smolvla_forward() -> None:
     import torch
-
     from lerobot.policies.factory import make_pre_post_processors
     from lerobot.policies.smolvla.modeling_smolvla import SmolVLAPolicy
 

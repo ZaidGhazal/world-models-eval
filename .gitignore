@@ -1,0 +1,23 @@
+# Data & artifacts (dataset re-downloads from HF Hub)
+data/
+results/
+wandb/
+outputs/
+checkpoints/
+*.hdf5
+*.ckpt
+
+# Python
+__pycache__/
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+third_party/

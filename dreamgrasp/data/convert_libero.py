@@ -179,7 +179,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--suites", nargs="+", default=["libero_spatial", "libero_object", "libero_goal"])
     parser.add_argument("--raw-dir", type=Path, default=REPO_ROOT / "data" / "libero_raw")
-    parser.add_argument("--repo-id", default="zaid-ghazal/dreamgrasp-libero")
+    parser.add_argument("--repo-id", default="world-model-eval/dreamgrasp-libero")
     parser.add_argument("--root", type=Path, default=None, help="output dir (default data/lerobot/<repo-id>)")
     parser.add_argument("--max-episodes", type=int, default=None, help="cap for tiny/debug runs")
     args = parser.parse_args()

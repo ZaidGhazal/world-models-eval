@@ -1,6 +1,6 @@
 # WM-1: data=0.10, context=2, dynamics 6L/256d
 name: wm_tier1
-dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+dataset_root: data/lerobot/world-model-eval/dreamgrasp-libero
 split: train
 data_fraction: 0.10
 image_size: 128

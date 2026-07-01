@@ -1,7 +1,7 @@
 # Mac sanity config — MPS, fp32, minutes not hours.
 run_name: smolvla_tiny
 pretrained: lerobot/smolvla_base
-dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+dataset_root: data/lerobot/world-model-eval/dreamgrasp-libero
 split: train
 episodes: 5
 image_size: 64

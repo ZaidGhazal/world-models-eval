@@ -1,6 +1,6 @@
 # Mac sanity config — MPS, fp32, minutes not hours.
 name: wm_tiny
-dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+dataset_root: data/lerobot/world-model-eval/dreamgrasp-libero
 split: train
 episodes: 5              # tiny mode caps episodes directly
 data_fraction: 1.0

@@ -56,13 +56,11 @@ def demo_keys_sorted(f: h5py.File) -> list[str]:
 
 def build_split_plan(suite_files: dict[str, list[Path]], seed: int = 0) -> list[dict]:
     """Deterministic split assignment. Returns one record per episode, in write order."""
-    plan = []
+    plan: list[dict] = []
     for suite in sorted(suite_files):
         files = sorted(suite_files[suite])
-        rng = np.random.default_rng(abs(hash(suite)) % 2**32)  # not used for heldout choice
         # Held-out tasks: last N in sorted order — simple, deterministic, frozen in splits.json.
         heldout = {f.stem for f in files[-N_HELDOUT_TASKS_PER_SUITE:]}
-        del rng
         for path in files:
             with h5py.File(path, "r") as f:
                 keys = demo_keys_sorted(f)

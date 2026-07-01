@@ -95,7 +95,8 @@ def main() -> None:
 
     import wandb
 
-    run = wandb.init(project="dreamgrasp", name=cfg.name, mode=cfg.wandb, config=OmegaConf.to_container(cfg))
+    wandb_cfg = dict(OmegaConf.to_container(cfg))  # type: ignore[arg-type,call-overload]
+    run = wandb.init(project="dreamgrasp", name=cfg.name, mode=cfg.wandb, config=wandb_cfg)
     out_dir = REPO_ROOT / cfg.out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     t0 = time.time()

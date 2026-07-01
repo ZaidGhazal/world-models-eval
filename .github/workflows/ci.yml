@@ -1,0 +1,28 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      # CPU-only job: lint + typecheck + the tests that don't need the sim stack or datasets.
+      - name: Install (CPU-only subset)
+        run: |
+          pip install torch==2.10.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy pandas pyarrow scipy omegaconf pytest ruff mypy
+      - name: Ruff
+        run: ruff check dreamgrasp scripts tests space && ruff format --check dreamgrasp scripts tests space
+      - name: Mypy
+        run: mypy dreamgrasp
+      - name: Pytest (CPU, no-sim subset)
+        run: pytest tests/test_norm.py tests/test_shapes.py tests/test_correlate.py tests/test_no_cuda_literals.py -q
+        env:
+          PYTHONPATH: .

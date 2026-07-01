@@ -28,9 +28,7 @@ def make_policy_dataset(
 
     episodes = episodes if episodes is not None else episodes_for_split(split)
     delta_timestamps = {"action": [i / fps for i in range(chunk_size)]}
-    return LeRobotDataset(
-        repo_id=root.name, root=root, episodes=episodes, delta_timestamps=delta_timestamps
-    )
+    return LeRobotDataset(repo_id=root.name, root=root, episodes=episodes, delta_timestamps=delta_timestamps)
 
 
 class ClipDataset(Dataset):

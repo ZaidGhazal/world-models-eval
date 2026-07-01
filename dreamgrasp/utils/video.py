@@ -10,5 +10,5 @@ def save_mp4(frames: list[np.ndarray] | np.ndarray, path: str | Path, fps: int =
     """Save (T, H, W, 3) uint8 frames as MP4 (uses imageio-ffmpeg)."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    iio.mimwrite(path, np.asarray(frames), fps=fps, macro_block_size=1)
+    iio.mimwrite(path, list(np.asarray(frames)), fps=fps, macro_block_size=1)
     return path

@@ -1,0 +1,25 @@
+# WM-3: data=0.50, context=4, dynamics 12L/512d
+name: wm_tier3
+dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+split: train
+data_fraction: 0.50
+image_size: 128
+latent_dim: 8
+context: 4
+n_layers: 12
+d_model: 512
+n_heads: 8
+lpips_weight: 0.0
+
+vae_steps: 20000
+dyn_steps: 60000
+batch_size: 32
+lr: 3.0e-4
+warmup_steps: 500
+grad_clip: 1.0
+num_workers: 4
+log_every: 100
+save_every: 10000
+out_dir: checkpoints/world_model/tier_3
+wandb: online
+seed: 0

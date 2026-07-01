@@ -1,0 +1,26 @@
+# Mac sanity config — MPS, fp32, minutes not hours.
+name: wm_tiny
+dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+split: train
+episodes: 5              # tiny mode caps episodes directly
+data_fraction: 1.0
+image_size: 64
+latent_dim: 8
+context: 2
+n_layers: 6
+d_model: 256
+n_heads: 8
+lpips_weight: 0.0
+
+vae_steps: 150
+dyn_steps: 150
+batch_size: 4
+lr: 3.0e-4
+warmup_steps: 10
+grad_clip: 1.0
+num_workers: 0
+log_every: 25
+save_every: 150
+out_dir: checkpoints/world_model/tiny
+wandb: offline
+seed: 0

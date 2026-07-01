@@ -1,0 +1,25 @@
+# WM-1: data=0.10, context=2, dynamics 6L/256d
+name: wm_tier1
+dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+split: train
+data_fraction: 0.10
+image_size: 128
+latent_dim: 8
+context: 2
+n_layers: 6
+d_model: 256
+n_heads: 8
+lpips_weight: 0.0
+
+vae_steps: 20000
+dyn_steps: 60000
+batch_size: 32
+lr: 3.0e-4
+warmup_steps: 500
+grad_clip: 1.0
+num_workers: 4
+log_every: 100
+save_every: 10000
+out_dir: checkpoints/world_model/tier_1
+wandb: online
+seed: 0

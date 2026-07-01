@@ -1,0 +1,24 @@
+# Real Type 2 config — CUDA machine. Scale lives here, not in code.
+run_name: smolvla_libero
+pretrained: lerobot/smolvla_base
+dataset_root: data/lerobot/zaid-ghazal/dreamgrasp-libero
+split: train
+episodes: null            # null = all episodes in split
+image_size: null          # null = native resolution
+chunk_size: 8
+n_action_steps: 8
+fps: 20
+
+steps: 40000
+batch_size: 8
+grad_accum: 8             # effective batch 64
+lr: 1.0e-4
+warmup_steps: 1000        # cosine decay after warmup
+grad_clip: 1.0
+num_workers: 4
+
+log_every: 50
+save_every: 5000          # checkpoints at 5k/10k/... (rankable set comes from these)
+out_dir: checkpoints/policy/smolvla_libero
+wandb: online
+seed: 0

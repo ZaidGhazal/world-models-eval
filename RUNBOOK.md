@@ -83,6 +83,12 @@ Acceptance:
 - Spread between worst and best policy is at least 25 points.
 - Add 20 categorized failure videos to `docs/failures.md`.
 
+Acceptance command:
+
+```bash
+python -m dreamgrasp.eval.acceptance sim
+```
+
 ## T2.3 World-Model Family
 
 ```bash
@@ -106,6 +112,12 @@ Acceptance:
 - WM-5 gives coherent 30-50 step rollouts at 128px.
 - Fidelity is monotonic-ish across tiers. If WM-2 clearly beats WM-4, stop and debug tier design.
 - Publish WM-4/WM-5 to HF only after explicit release approval.
+
+Acceptance command:
+
+```bash
+python -m dreamgrasp.eval.acceptance wm
+```
 
 ## T2.4 Success Classifier
 
@@ -154,6 +166,12 @@ Acceptance:
 - Parquet columns: `checkpoint, task, wm_tier, seed, dream_success_prob`.
 - One `(checkpoint, task, tier)` triple evaluates in under 10 minutes.
 - Dream videos are not used for claims until the classifier has passed T2.4.
+
+Acceptance command:
+
+```bash
+python -m dreamgrasp.eval.acceptance dream
+```
 
 ## T2.6 Calibration Study
 

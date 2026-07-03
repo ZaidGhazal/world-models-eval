@@ -153,6 +153,7 @@ def main() -> None:
     parser.add_argument("--fidelity", type=Path, default=REPO_ROOT / "results" / "wm_fidelity.parquet")
     parser.add_argument("--synthetic", type=float, default=None, metavar="RHO")
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "report" / "figures" / "trust_region.png")
+    parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
     args = parser.parse_args()
 
     if args.synthetic is not None:
@@ -178,6 +179,17 @@ def main() -> None:
     if fid:
         trust_region_chart(rel, fid, args.out)
         print(f"chart -> {args.out}")
+    import wandb
+
+    run = wandb.init(project="world-models-eval", name="calibration_study", mode=args.wandb)
+    for tier, (rho, lo, hi) in rel.items():
+        run.summary[f"{tier}/spearman_rho"] = rho
+        run.summary[f"{tier}/spearman_ci_lo"] = lo
+        run.summary[f"{tier}/spearman_ci_hi"] = hi
+    run.summary["task_level_pearson_best"] = task_level_pearson(sim, dream, best)
+    if args.out.exists():
+        run.log({"trust_region": wandb.Image(str(args.out))})
+    run.finish()
 
 
 if __name__ == "__main__":

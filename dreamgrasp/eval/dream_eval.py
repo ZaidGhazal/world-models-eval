@@ -72,6 +72,8 @@ def main() -> None:
     parser.add_argument("--classifier", type=Path, default=None, help="success classifier checkpoint")
     parser.add_argument("--save-videos", action="store_true")
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "results" / "dream_success.parquet")
+    parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
+    parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
 
     device = get_device()
@@ -79,6 +81,23 @@ def main() -> None:
     policy, preprocessor, _ = load_policy(args.policy, device)
     vae, dyn, cfg = load_world_model(args.world_model, device)
     policy_slug = checkpoint_slug(args.policy)
+    import wandb
+
+    run = wandb.init(
+        project="world-models-eval",
+        name=args.run_name or f"dream_eval_{slugify(args.wm_tier)}_{policy_slug}",
+        mode=args.wandb,
+        config={
+            "policy": str(args.policy),
+            "world_model": str(args.world_model),
+            "wm_tier": args.wm_tier,
+            "n_dreams": args.n_dreams,
+            "horizon": args.horizon,
+            "split": args.split,
+            "seed": args.seed,
+            "classifier": str(args.classifier) if args.classifier else None,
+        },
+    )
 
     episodes = episodes_for_split(args.split)
     if args.episodes:
@@ -111,6 +130,7 @@ def main() -> None:
         if args.save_videos:
             video_name = f"{slugify(args.wm_tier)}__{policy_slug}__seed{args.seed + k}.mp4"
             save_mp4(frames, REPO_ROOT / "results" / "dream_videos" / video_name)
+        run.log({"dream/success_prob": prob, "dream/horizon": args.horizon}, step=k)
         print(f"dream {k}: task='{task_lang}' frames={frames.shape} prob={prob}", flush=True)
 
     df = pd.DataFrame(rows)
@@ -118,6 +138,9 @@ def main() -> None:
     if args.out.exists():
         df = pd.concat([pd.read_parquet(args.out), df], ignore_index=True)
     df.to_parquet(args.out, index=False)
+    run.summary["mean_dream_success_prob"] = float(pd.DataFrame(rows)["dream_success_prob"].mean())
+    run.summary["n_rows"] = len(rows)
+    run.finish()
     print(f"wrote {len(rows)} rows -> {args.out}")
 
 

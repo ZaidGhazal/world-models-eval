@@ -5,8 +5,8 @@ cd "$(dirname "$0")/.."
 
 if [[ "${1:-}" == "--dry-run" ]]; then
     shift
-    python -m dreamgrasp.eval.correlate --synthetic 0.95 "$@"
-    python -m dreamgrasp.eval.correlate --synthetic 0.0 "$@"
+    python -m dreamgrasp.eval.correlate --synthetic 0.95 --wandb disabled "$@"
+    python -m dreamgrasp.eval.correlate --synthetic 0.0 --wandb disabled "$@"
     exit 0
 fi
 

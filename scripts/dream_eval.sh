@@ -19,7 +19,7 @@ if [[ "${1:-}" == "--dry-run" ]]; then
     fi
     python -m dreamgrasp.eval.dream_eval --policy "$policy" --world-model "$world_model" \
         --wm-tier dry_run --n-dreams 1 --horizon 5 --episodes 1 --save-videos \
-        --out results/dry_run/dream_success.parquet "$@"
+        --out results/dry_run/dream_success.parquet --wandb offline "$@"
     exit 0
 fi
 

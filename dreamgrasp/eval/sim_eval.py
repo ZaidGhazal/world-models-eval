@@ -87,6 +87,8 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--video-every", type=int, default=10)
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "results" / "sim_success.parquet")
+    parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
+    parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
 
     from libero.libero import benchmark, get_libero_path
@@ -98,8 +100,24 @@ def main() -> None:
     action_stats = load_stats()["action"]
     suite = benchmark.get_benchmark_dict()[args.suite]()
     ckpt_slug = checkpoint_slug(args.checkpoint)
+    import wandb
+
+    run = wandb.init(
+        project="world-models-eval",
+        name=args.run_name or f"sim_eval_{ckpt_slug}",
+        mode=args.wandb,
+        config={
+            "checkpoint": str(args.checkpoint),
+            "suite": args.suite,
+            "task_ids": args.task_ids,
+            "n_rollouts": args.n_rollouts,
+            "max_steps": args.max_steps,
+            "seed": args.seed,
+        },
+    )
 
     rows = []
+    global_step = 0
     for task_id in args.task_ids:
         task = suite.get_task(task_id)
         bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
@@ -124,6 +142,16 @@ def main() -> None:
                 action_stats,
             )
             n_success += success
+            run.log(
+                {
+                    "rollout/success": int(success),
+                    "rollout/steps": steps,
+                    "rollout/task_id": task_id,
+                    f"task/{slugify(task.name)}/success": int(success),
+                },
+                step=global_step,
+            )
+            global_step += 1
             rows.append(
                 {
                     "checkpoint": str(args.checkpoint),
@@ -143,12 +171,22 @@ def main() -> None:
         env.close()
         lo, hi = wilson_ci(n_success, args.n_rollouts)
         print(f"{task.name}: {n_success}/{args.n_rollouts} wilson95=[{lo:.3f},{hi:.3f}]")
+        run.log(
+            {
+                f"summary/{slugify(task.name)}/success_rate": n_success / args.n_rollouts,
+                f"summary/{slugify(task.name)}/wilson_lo": lo,
+                f"summary/{slugify(task.name)}/wilson_hi": hi,
+            }
+        )
 
     df = pd.DataFrame(rows)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     if args.out.exists():
         df = pd.concat([pd.read_parquet(args.out), df], ignore_index=True)
     df.to_parquet(args.out, index=False)
+    run.summary["success_rate"] = float(pd.DataFrame(rows)["success"].mean()) if rows else float("nan")
+    run.summary["n_rows"] = len(rows)
+    run.finish()
     print(f"wrote {len(rows)} rows -> {args.out}")
 
 

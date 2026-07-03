@@ -15,7 +15,7 @@ if [[ "${1:-}" == "--dry-run" ]]; then
     fi
     python -m dreamgrasp.eval.sim_eval --checkpoint "$ckpt" --suite libero_goal \
         --task-ids 0 --n-rollouts 1 --max-steps 5 --video-every 1 \
-        --out results/dry_run/sim_success.parquet "$@"
+        --out results/dry_run/sim_success.parquet --wandb offline "$@"
     exit 0
 fi
 

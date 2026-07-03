@@ -10,6 +10,7 @@ Accuracy bounds every downstream claim — the >=90% held-out bar applies at Typ
 """
 
 import argparse
+import json
 from pathlib import Path
 
 import imageio.v2 as iio
@@ -102,6 +103,14 @@ def main() -> None:
     parser.add_argument("--val-fraction", type=float, default=0.2)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "checkpoints" / "classifier")
+    parser.add_argument(
+        "--confusion-out",
+        type=Path,
+        default=REPO_ROOT / "docs" / "classifier_confusion_matrix.csv",
+    )
+    parser.add_argument("--metrics-out", type=Path, default=REPO_ROOT / "docs" / "classifier_metrics.json")
+    parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
+    parser.add_argument("--run-name", default="success_classifier")
     args = parser.parse_args()
 
     device = get_device()
@@ -117,6 +126,21 @@ def main() -> None:
 
     model = SuccessClassifier().to(device)
     optim = torch.optim.AdamW(model.head.parameters(), lr=args.lr)
+
+    import wandb
+
+    run = wandb.init(
+        project="world-models-eval",
+        name=args.run_name,
+        mode=args.wandb,
+        config={
+            "epochs": args.epochs,
+            "lr": args.lr,
+            "val_fraction": args.val_fraction,
+            "seed": args.seed,
+            "n_videos": len(items),
+        },
+    )
 
     # Pre-embed all videos once (encoder is frozen) — the actual training is head-only.
     embeddings, labels = [], []
@@ -143,11 +167,42 @@ def main() -> None:
         model.eval()
         with torch.no_grad():
             val_logits = model.head(embs[val_idx]).squeeze(-1)
-            val_acc = ((val_logits > 0).float() == ys[val_idx]).float().mean().item()
+            val_pred = (val_logits > 0).float()
+            val_acc = (val_pred == ys[val_idx]).float().mean().item()
         print(f"epoch {epoch}: train_loss {total / len(train_idx):.4f} val_acc {val_acc:.3f}", flush=True)
+        run.log({"train/loss": total / len(train_idx), "val/accuracy": val_acc}, step=epoch)
 
     model.save(args.out)
+    y_true = ys[val_idx].detach().cpu().numpy().astype(int)
+    y_pred = val_pred.detach().cpu().numpy().astype(int)
+    confusion = pd.DataFrame(
+        [
+            {
+                "tn": int(((y_true == 0) & (y_pred == 0)).sum()),
+                "fp": int(((y_true == 0) & (y_pred == 1)).sum()),
+                "fn": int(((y_true == 1) & (y_pred == 0)).sum()),
+                "tp": int(((y_true == 1) & (y_pred == 1)).sum()),
+            }
+        ]
+    )
+    args.confusion_out.parent.mkdir(parents=True, exist_ok=True)
+    confusion.to_csv(args.confusion_out, index=False)
+    metrics = {
+        "val_accuracy": float(val_acc),
+        "n_train": int(len(train_idx)),
+        "n_val": int(len(val_idx)),
+        "confusion_matrix": confusion.iloc[0].to_dict(),
+    }
+    args.metrics_out.write_text(json.dumps(metrics, indent=2) + "\n")
+    run.summary["val_accuracy"] = val_acc
+    for key, value in metrics["confusion_matrix"].items():
+        run.summary[f"confusion/{key}"] = value
+    run.finish()
     print(f"saved head -> {args.out} (val_acc {val_acc:.3f} on {len(val_idx)} videos)")
+    print(f"wrote confusion matrix -> {args.confusion_out}")
+    print(f"wrote metrics -> {args.metrics_out}")
+    if val_acc < 0.90:
+        raise SystemExit(f"classifier acceptance FAILED: val_acc {val_acc:.3f} < 0.90")
 
 
 if __name__ == "__main__":

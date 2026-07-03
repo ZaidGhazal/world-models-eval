@@ -16,8 +16,10 @@ Evaluating robot manipulation policies in the real world is slow and expensive; 
 but drift from reality. A recent line of work evaluates policies *inside learned world models*:
 WorldEval [worldeval2025] runs policies in a latent video model, WPE [wpe2025] studies
 world-model policy evaluation head-on, Ctrl-World [ctrlworld2025] builds controllable
-manipulation world models, and SIMPLER [simpler2024] shows simulated evaluation can predict
-real-world performance. **We do not claim to invent world-model-based evaluation.** What is
+manipulation world models, SIMPLER [simpler2024] shows simulated evaluation can predict
+real-world performance, and RoboWM-Bench [robowmbench2026] evaluates video world models
+through embodiment-grounded execution. **We do not claim to invent world-model-based
+evaluation.** What is
 missing is a calibration: *how good does the world model have to be before its verdicts can be
 trusted?* We answer this with a controlled tier study on LIBERO [libero2023] with SmolVLA
 policies [smolvla2025].
@@ -70,5 +72,6 @@ raw parquets.
 - [wpe2025] World-model-based Policy Evaluation. arXiv:2506.00613
 - [ctrlworld2025] Ctrl-World: A Controllable Generative World Model for Robot Manipulation. arXiv:2510.10125
 - [simpler2024] Evaluating Real-World Robot Manipulation Policies in Simulation. arXiv:2405.05941
+- [robowmbench2026] RoboWM-Bench: A Benchmark for Evaluating World Models in Robotic Manipulation. arXiv:2604.19092
 - [libero2023] LIBERO: Benchmarking Knowledge Transfer for Lifelong Robot Learning. arXiv:2306.03310
 - [smolvla2025] SmolVLA: A Vision-Language-Action Model for Affordable and Efficient Robotics. arXiv:2506.01844

@@ -13,13 +13,15 @@ invent it:
 - **WPE (World-model-based Policy Evaluation)** — [arXiv:2506.00613](https://arxiv.org/abs/2506.00613)
 - **Ctrl-World** — [arXiv:2510.10125](https://arxiv.org/abs/2510.10125)
 - **SIMPLER** — [arXiv:2405.05941](https://arxiv.org/abs/2405.05941)
+- **RoboWM-Bench** — [arXiv:2604.19092](https://arxiv.org/abs/2604.19092)
 
 Our contributions are (1) the **quality→reliability calibration curve** ("trust region") and
 (2) the **open single-GPU harness** that produces it.
 
 ## Status
 
-Type 1 (development, Apple Silicon) in progress. See `IMPLEMENTATION_GUIDE.md` for the full spec.
+Type 2 execution is in progress on the GPU machine. The current run log is
+[`RUN_LOG.md`](RUN_LOG.md); commands and acceptance checks are in [`RUNBOOK.md`](RUNBOOK.md).
 
 ## Setup (macOS / Apple Silicon)
 

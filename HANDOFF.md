@@ -2,14 +2,54 @@
 
 Status date: 2026-07-02.
 
-Type 1 is now verified from a clean clone of the pushed GitHub repository.
+Type 1 is verified from a clean clone of the pushed GitHub repository. Type 2 is prepared
+for launch, but full-scale training/evaluation must wait for explicit Prompt 2B approval.
 
 - GitHub repository: https://github.com/ZaidGhazal/world-models-eval
-- Release tag: `v0.1-type1-complete`
+- Type 1 release tag: `v0.1-type1-complete`
+- Type 2 readiness tag: `v0.2-type2-ready`
 - Validated code commit: `9b5b545dfdb5e41b5cc882dfeb928635a18a69de`
 - HF dataset: https://huggingface.co/datasets/zaid9876/world-models-eval
 - HF dataset codebase tag: `v3.0` for LeRobot 0.4.4
 - Public repo access: the GPU machine can clone over HTTPS or SSH. No deploy key is required.
+
+## Type 2 Readiness Update
+
+The Type 2 prep-only pass is recorded in `TYPE2_READY.md`; no full-scale multi-hour jobs
+were launched. The GPU checkout on `umd-user@141.215.80.58` is `~/world-models-eval`,
+using conda env `world-models-eval` and `MUJOCO_GL=egl`.
+
+Prepared changes:
+
+- Dataset source and revision are recorded in all policy/world-model configs:
+  `zaid9876/world-models-eval` at `v3.0`.
+- Full world-model configs are sized for the 24 GB RTX 4500 Ada GPU: bf16 precision and
+  batch size 16 for the full tiers.
+- `configs/compute.yaml` records hardware, runtime, dataset, and cut-order assumptions.
+- `scripts/train_policy.sh`, `scripts/train_wm_tier.sh`, `scripts/sim_eval.sh`,
+  `scripts/dream_eval.sh`, and `scripts/run_study.sh` have dry-run modes that exercise
+  the real training/evaluation entry points without starting full-scale jobs.
+- `RUNBOOK.md` contains the ordered T2.1-T2.8 commands, outputs, acceptance checks,
+  cut order, and wall-clock estimate.
+
+GPU readiness checks passed:
+
+- `python -m pip install -e ".[dev]"`, `python -m pip check`, CUDA visibility, LIBERO EGL
+  rendering, W&B logging, HF write-token smoke test, and LeRobot dataset load.
+- `python -m pytest`, `ruff check .`, `mypy dreamgrasp`, `compileall`, and
+  `space.app.build()`.
+- Dry-run launches for policy training, all five world-model tiers, simulator eval,
+  dream eval, and the synthetic correlation study.
+
+Estimated occupied GPU wall-clock for Prompt 2B is 120-180 hours:
+
+| Phase | Estimate |
+|---|---:|
+| Policy fine-tune + simulator evaluation | 40-60 h |
+| World-model family, 5 tiers | 50-80 h |
+| Success classifier | 5 h |
+| Dream rollouts | 20-30 h |
+| Analysis/release assembly | 5 h |
 
 ## What Was Built
 

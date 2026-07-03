@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dreamgrasp"
+name = "world-models-eval"
 version = "0.1.0"
 description = "How good must a learned world model be before you can trust it to evaluate robot policies?"
 readme = "README.md"

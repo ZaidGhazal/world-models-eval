@@ -1,7 +1,7 @@
 # Real Type 2 config — CUDA machine. Scale lives here, not in code.
 run_name: smolvla_libero
 pretrained: lerobot/smolvla_base
-dataset_root: data/lerobot/world-model-eval/dreamgrasp-libero
+dataset_root: data/lerobot/world-models-eval
 split: train
 episodes: null            # null = all episodes in split
 image_size: null          # null = native resolution

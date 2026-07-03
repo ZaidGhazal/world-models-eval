@@ -1,4 +1,4 @@
-"""DreamGrasp demo Space: pre-computed sim-vs-dream videos side by side + trust-region chart.
+"""World Models Eval demo Space: pre-computed sim-vs-dream videos side by side + trust-region chart.
 
 Local scaffold (Type 1): runs with placeholder videos from space/precomputed/.
 Type 2 fills precomputed/ with real (task, tier, checkpoint) videos and the final chart.
@@ -30,9 +30,9 @@ def lookup(task: str, tier: str, checkpoint: str) -> tuple[str | None, str | Non
 
 def build() -> gr.Blocks:
     m = load_manifest()
-    with gr.Blocks(title="DreamGrasp") as demo:
+    with gr.Blocks(title="World Models Eval") as demo:
         gr.Markdown(
-            "# DreamGrasp\n"
+            "# World Models Eval\n"
             "**How good must a world model be before you can trust it to evaluate robot policies?**\n\n"
             "Compare a policy rollout in the simulator (left) with the same policy dreaming inside "
             "a learned world model (right). Builds on WorldEval, WPE, Ctrl-World, and SIMPLER."

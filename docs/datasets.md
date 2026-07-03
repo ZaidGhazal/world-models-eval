@@ -1,13 +1,13 @@
 # Dataset notes
 
-## dreamgrasp-libero (processed)
+## world-models-eval (processed)
 
 - Source: LIBERO demo HDF5s for `libero_spatial`, `libero_object`, `libero_goal`
   (HF mirror `yifengzhu-hf/LIBERO-datasets`, ~19 GB raw). LIBERO is MIT-licensed — cite
   arXiv:2306.03310.
 - Converted with `python -m dreamgrasp.data.convert_libero` (one command) to LeRobotDataset v3:
   **1500 episodes, 200,485 frames, ~600 MB** (AV1-encoded video).
-- Published at `world-model-eval/dreamgrasp-libero`.
+- Published at `zaid9876/world-models-eval`.
 
 ### Schema
 

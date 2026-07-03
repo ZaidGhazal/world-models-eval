@@ -61,7 +61,7 @@ def smoke_smolvla_forward() -> None:
 def smoke_wandb() -> None:
     import wandb
 
-    run = wandb.init(project="dreamgrasp", name="smoke-test", tags=["smoke"])
+    run = wandb.init(project="world-models-eval", name="smoke-test", tags=["smoke"])
     run.log({"smoke/dummy_metric": 1.0})
     run.finish()
     print("[3/3] W&B logging OK")

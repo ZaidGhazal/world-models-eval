@@ -1,6 +1,6 @@
-# DreamGrasp — Developer Implementation Guide (A → Z)
+# World Models Eval — Developer Implementation Guide (A → Z)
 
-This is the complete build spec for DreamGrasp: a single-GPU, fully reproducible study of **how good a learned world model must be before you can trust it to evaluate robot policies**.
+This is the complete build spec for World Models Eval: a single-GPU, fully reproducible study of **how good a learned world model must be before you can trust it to evaluate robot policies**.
 
 > **Positioning rule (non-negotiable):** This project *builds on* WorldEval (arXiv:2505.19017), WPE (arXiv:2506.00613), Ctrl-World (arXiv:2510.10125), and SIMPLER (arXiv:2405.05941). We never claim to have invented world-model-based evaluation. Our contributions are (1) the **quality→reliability calibration curve** and (2) the **open single-GPU harness**. Cite these papers in the README, the report, and the model cards.
 
@@ -14,7 +14,7 @@ The project is executed in **two sequential work types on two different machines
 
 | | **TYPE 1 — Development** | **TYPE 2 — Training & Study** |
 |---|---|---|
-| Machine | **MacBook Pro, M1 Pro chip** (Apple Silicon, unified memory, no CUDA) | Linux box / cloud instance with **NVIDIA GPU ≥24 GB VRAM** (RTX 4090 or A100) |
+| Machine | **MacBook Pro, M1 Pro chip** (Apple Silicon, unified memory, no CUDA) | Linux box / cloud instance with **NVIDIA GPU >=24 GB VRAM** (RTX 4090 or A100) |
 | Compute backend | CPU + PyTorch **MPS** | **CUDA** (bf16) |
 | Scope | All code, all tests, full data pipeline, tiny-scale sanity training, mocked end-to-end runs | Real training runs, bulk simulator/dream rollouts, the calibration study, releases |
 | Exit condition | The **Type 1 Handoff Gate** (§T1.7) passes entirely on the Mac | Definition of Done (§T2.8) |
@@ -34,7 +34,7 @@ The project is executed in **two sequential work types on two different machines
    Never hard-code `"cuda"`. Precision policy: bf16 on CUDA, fp32 on MPS/CPU (MPS half-precision support is unreliable — do not fight it).
 2. **No CUDA-only dependencies in the core package.** flash-attention, bitsandbytes, TensorRT, xformers are forbidden in `dreamgrasp/` (optional CUDA extras may live behind a `[cuda]` extra and a runtime import guard). OpenVLA-7B + LoRA is a Type 2 *optional* branch for this reason — the default policy is SmolVLA.
 3. **Rendering backend is configurable.** MuJoCo headless rendering: `MUJOCO_GL=egl` on Linux, default GLFW/CGL on macOS. Read it from env; never hard-code.
-4. **Every training script has a `--tiny` mode** (≤5 episodes, 64px, ≤200 steps) that must run to completion on the Mac. Tiny mode is how Type 1 proves the code works without GPU-scale compute.
+4. **Every training script has a `--tiny` mode** (<=5 episodes, 64px, <=200 steps) that must run to completion on the Mac. Tiny mode is how Type 1 proves the code works without GPU-scale compute.
 5. **Configs, not code, define scale.** The difference between a Mac sanity run and a real A100 run must be exactly one config file.
 
 ---
@@ -45,14 +45,14 @@ Everything in this section runs and is verified on the Mac. There is no time sch
 
 ## T1.0 Environment setup (macOS / Apple Silicon)
 
-**Hardware assumptions:** M1 Pro, 16–32 GB unified memory, ≥200 GB free disk (full raw dataset can stay on an external drive or be downloaded partially).
+**Hardware assumptions:** M1 Pro, 16–32 GB unified memory, >=200 GB free disk (full raw dataset can stay on an external drive or be downloaded partially).
 
 ```bash
 # Homebrew deps
 brew install ffmpeg git-lfs
 
 # Project env (arm64 native — do NOT use x86 conda under Rosetta)
-conda create -n dreamgrasp python=3.10 -y && conda activate dreamgrasp
+conda create -n world-models-eval python=3.10 -y && conda activate world-models-eval
 pip install torch torchvision            # official arm64 wheels include MPS
 
 # Core deps
@@ -94,7 +94,7 @@ The pipeline is CPU-bound, so the Mac does the *actual* work here; the processed
 3. **Normalization stats** → `configs/norm_stats.json`, shared by policy and world models. Unit-test the round trip `normalize(denormalize(x)) == x` — this is the most common silent bug in the whole project.
 4. **Splits, fixed forever:** 80% train / 10% val per task, plus **2–3 whole held-out tasks per suite** excluded from all training (they test evaluation under distribution shift). Add a leakage unit test (no held-out episode hash in train).
 5. **Loaders** (`dreamgrasp/data/loader.py`): batch modes for (a) policy training and (b) world-model training. Benchmark throughput on the Mac and record it in `docs/datasets.md` (M1 numbers are fine; re-benchmark in Type 2).
-6. **Publish** the processed dataset + dataset card to HF Hub (`your-handle/dreamgrasp-libero`) — can be done from the Mac. Note LIBERO's MIT license and cite the benchmark.
+6. **Publish** the processed dataset + dataset card to HF Hub (`your-handle/world-models-eval`) — can be done from the Mac. Note LIBERO's MIT license and cite the benchmark.
 
 **T1.1 acceptance:** one command converts raw → LeRobotDataset; all data unit tests green; dataset live on HF.
 
@@ -141,7 +141,7 @@ Implement the full architecture and the tier system:
 - Implement `eval/dream_eval.py`: policy acts on **decoded dreamed frames**; proprio inside the dream from a small state head on the dynamics model (or open-loop integration — document the choice); T=200 dreamed steps, N configurable; output schema `[checkpoint, task, wm_tier, seed, dream_success_prob]`.
 - Implement `eval/success_classifier.py`: frozen image encoder (e.g., SigLIP) per-frame + temporal pooling + MLP head, trained on labeled simulator videos.
 
-**Mac verification:** run the full dream loop with the tiny policy + tiny world model for 20 dreamed steps — it must execute end-to-end and write a valid parquet. Train the classifier on ~50 tiny sim videos to prove the training loop runs (accuracy is meaningless at this scale; the ≥90% bar applies in Type 2).
+**Mac verification:** run the full dream loop with the tiny policy + tiny world model for 20 dreamed steps — it must execute end-to-end and write a valid parquet. Train the classifier on ~50 tiny sim videos to prove the training loop runs (accuracy is meaningless at this scale; the >=90% bar applies in Type 2).
 
 ## T1.6 Analysis, report skeleton, and demo scaffold
 
@@ -169,13 +169,13 @@ Implement the full architecture and the tier system:
 
 # TYPE 2 — Training & study on the GPU machine
 
-Prerequisite: tag `v0.1-type1-complete` checked out on a Linux machine with an NVIDIA GPU (≥24 GB VRAM; A100 40GB preferred). Type 2 is mostly *running* what Type 1 built, plus analysis and release. There is no calendar schedule — tasks T2.0 → T2.8 run in order, each gated by its acceptance criteria. Note that Type 2 durations are bound by GPU wall-clock (training and rollout runs take real hours regardless of agent speed — see the GPU budget table), so the agent should launch long runs, monitor via W&B, and proceed to preparable work (report skeleton, Space assets) while they execute.
+Prerequisite: tag `v0.1-type1-complete` checked out on a Linux machine with an NVIDIA GPU (>=24 GB VRAM; A100 40GB preferred). Type 2 is mostly *running* what Type 1 built, plus analysis and release. There is no calendar schedule — tasks T2.0 → T2.8 run in order, each gated by its acceptance criteria. Note that Type 2 durations are bound by GPU wall-clock (training and rollout runs take real hours regardless of agent speed — see the GPU budget table), so the agent should launch long runs, monitor via W&B, and proceed to preparable work (report skeleton, Space assets) while they execute.
 
 ## T2.0 Environment bring-up (Linux / CUDA)
 
 ```bash
 sudo apt-get install -y ffmpeg libegl1 libgl1 libosmesa6-dev
-conda create -n dreamgrasp python=3.10 -y && conda activate dreamgrasp
+conda create -n world-models-eval python=3.10 -y && conda activate world-models-eval
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 pip install -e ".[dev]"                  # same pinned deps as the Mac
 export MUJOCO_GL=egl                     # Linux headless rendering
@@ -189,7 +189,7 @@ export MUJOCO_GL=egl                     # Linux headless rendering
 - **Save checkpoints at 5k/10k/20k/40k steps + one deliberately early "bad" one** → the rankable set {P1…P5}.
 - Optional branch (A100 only): OpenVLA-7B + LoRA (r=32) as a second policy family.
 
-**Acceptance:** best checkpoint at a sane LIBERO success rate (~50–80% expected; <20% ⇒ debug normalization/camera keys); **spread ≥25 points** between worst and best checkpoint (required for rank correlation to mean anything); failure gallery (20 categorized videos) in `docs/failures.md`; best checkpoint + card on HF.
+**Acceptance:** best checkpoint at a sane LIBERO success rate (~50–80% expected; <20% ⇒ debug normalization/camera keys); **spread >=25 points** between worst and best checkpoint (required for rank correlation to mean anything); failure gallery (20 categorized videos) in `docs/failures.md`; best checkpoint + card on HF.
 
 ## T2.2 Ground-truth simulator evaluation
 
@@ -203,7 +203,7 @@ Train all five tiers with identical optimizer/steps-per-example/seed (only the t
 
 ## T2.4 Success classifier (real scale)
 
-Train on the thousands of labeled simulator videos produced by T2.2. **Require ≥90% held-out accuracy before use**; publish the confusion matrix in `docs/`. Its accuracy bounds every downstream claim — report it in the paper.
+Train on the thousands of labeled simulator videos produced by T2.2. **Require >=90% held-out accuracy before use**; publish the confusion matrix in `docs/`. Its accuracy bounds every downstream claim — report it in the paper.
 
 ## T2.5 Dream rollouts
 
@@ -215,7 +215,7 @@ For every (policy checkpoint × task × WM tier): N=50 dreams, T=200 dreamed ste
 2. Task-level Pearson for the best policy.
 3. Repeat (1) on held-out tasks.
 4. **Trust-region chart:** x = world-model fidelity (16-step LPIPS or divergence step), y = ranking reliability (ρ with CI bars); two curves (in-distribution vs. held-out). Written conclusion states the threshold — whatever the numbers are, report them honestly; a flat curve is still a finding.
-5. Robustness (≥2 of): N=20 vs 50 rollouts; classifier threshold ±0.1; T=100 vs 200 horizon.
+5. Robustness (>=2 of): N=20 vs 50 rollouts; classifier threshold ±0.1; T=100 vs 200 horizon.
 
 **Acceptance:** `bash scripts/run_study.sh` regenerates the chart from raw parquets; `LIMITATIONS.md` covers sim-only, small models, classifier bound, single embodiment, LIBERO-specific.
 
@@ -223,7 +223,7 @@ For every (policy checkpoint × task × WM tier): N=50 dreams, T=200 dreamed ste
 
 - **Report** (6–10 pp, arXiv style): cites WorldEval/WPE/Ctrl-World/SIMPLER in the intro; method; tier design; trust-region results; robustness; limitations; reproducibility appendix (commands, GPU-hours, cost).
 - **Gradio Space:** dropdowns (task, tier, checkpoint) playing **pre-computed** sim-vs-dream videos side-by-side + interactive trust-region chart. Pre-compute everything; nothing runs live.
-- **HF artifacts, all cross-linked:** `dreamgrasp-libero` (already live), `dreamgrasp-vla`, `dreamgrasp-worldmodel`, `dreamgrasp-demo`.
+- **HF artifacts, all cross-linked:** `world-models-eval` (already live), `world-models-eval-vla`, `world-models-eval-worldmodel`, `world-models-eval-demo`.
 - **Repo v1.0:** README leads with the money GIF + trust-region chart and cites prior work in paragraph 1; CI green; `CITATION.cff`; Apache-2.0; tag `v1.0`.
 
 ## T2.8 Definition of done

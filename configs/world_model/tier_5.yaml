@@ -1,6 +1,6 @@
 # WM-5: data=1.00, context=8, dynamics 12L/512d
 name: wm_tier5
-dataset_root: data/lerobot/world-model-eval/dreamgrasp-libero
+dataset_root: data/lerobot/world-models-eval
 split: train
 data_fraction: 1.00
 image_size: 128

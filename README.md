@@ -1,8 +1,8 @@
-# DreamGrasp
+# World Models Eval
 
 **How good must a learned world model be before you can trust it to evaluate robot policies?**
 
-DreamGrasp is a single-GPU, fully reproducible study measuring the relationship between world-model
+World Models Eval is a single-GPU, fully reproducible study measuring the relationship between world-model
 quality and the reliability of world-model-based policy evaluation, on LIBERO manipulation tasks with
 SmolVLA policies.
 
@@ -25,7 +25,7 @@ Type 1 (development, Apple Silicon) in progress. See `IMPLEMENTATION_GUIDE.md` f
 
 ```bash
 brew install ffmpeg git-lfs
-conda create -n dreamgrasp python=3.10 -y && conda activate dreamgrasp
+conda create -n world-models-eval python=3.10 -y && conda activate world-models-eval
 pip install -e ".[dev]"
 pip install -e ./third_party/LIBERO --config-settings editable_mode=compat --no-deps
 python scripts/smoke_test.py

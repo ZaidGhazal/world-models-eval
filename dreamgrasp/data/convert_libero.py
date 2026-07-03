@@ -2,7 +2,7 @@
 
 One command: python -m dreamgrasp.data.convert_libero
   --suites libero_spatial libero_object libero_goal
-  --repo-id <hf-handle>/dreamgrasp-libero
+  --repo-id <hf-handle>/world-models-eval
 
 Two passes:
   1. compute per-dim action/state min-max over TRAIN episodes only -> configs/norm_stats.json
@@ -179,7 +179,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--suites", nargs="+", default=["libero_spatial", "libero_object", "libero_goal"])
     parser.add_argument("--raw-dir", type=Path, default=REPO_ROOT / "data" / "libero_raw")
-    parser.add_argument("--repo-id", default="world-model-eval/dreamgrasp-libero")
+    parser.add_argument("--repo-id", default="world-models-eval")
     parser.add_argument("--root", type=Path, default=None, help="output dir (default data/lerobot/<repo-id>)")
     parser.add_argument("--max-episodes", type=int, default=None, help="cap for tiny/debug runs")
     args = parser.parse_args()

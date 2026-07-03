@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DS_ROOT = REPO_ROOT / "data" / "lerobot" / "world-model-eval" / "dreamgrasp-libero"
+DS_ROOT = REPO_ROOT / "data" / "lerobot" / "world-models-eval"
 SPLITS = REPO_ROOT / "configs" / "splits.json"
 STATS = REPO_ROOT / "configs" / "norm_stats.json"
 

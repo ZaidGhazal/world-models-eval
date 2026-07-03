@@ -1,84 +1,112 @@
 # Type 1 → Type 2 Handoff
 
-Everything below was implemented and verified on a MacBook Pro (M1 Pro, MPS, fp32).
-Type 2 starts at tag `v0.1-type1-complete` on a Linux + NVIDIA machine (see §T2.0 of
-IMPLEMENTATION_GUIDE.md). Re-run this whole gate there as the parity check.
+Status date: 2026-07-02.
 
-## What was built
+This repository has real local git history on `main`, but it has not yet been pushed to GitHub
+because no GitHub remote exists and this machine has SSH auth but no repo-creation CLI/API token.
+Do not start Type 2 until the GitHub repo is created, this history is pushed, the
+`v0.1-type1-complete` tag is pushed, and the T1.7 gate is re-run from a clean clone.
 
-- **Data pipeline** (`dreamgrasp/data/`): one-command conversion of LIBERO
-  spatial/object/goal HDF5s → a single LeRobotDataset v3 (1500 episodes, 200,485 frames,
-  ~600 MB, AV1 video). Per-dim [-1,1] action normalization from train-split stats
-  (`configs/norm_stats.json`), deterministic frozen splits with content-hash leakage guard
-  (`configs/splits.json`: 960 train / 120 val / 120 test / 300 heldout, 2 held-out tasks
-  per suite). Loaders for policy batches (action chunks) and world-model clips.
-- **Policy stack** (`dreamgrasp/policy/train.py`): SmolVLA fine-tuning via lerobot 0.4.4
-  factory + processor pipeline; OmegaConf configs; W&B; checkpoint save/reload including
-  pre/post-processors. Type 2 config `configs/policy/smolvla_libero.yaml` (bf16 comes from
-  device policy, 40k steps, effective bs64).
-- **Sim eval** (`dreamgrasp/eval/sim_eval.py`): seeded LIBERO rollouts from per-task init
-  states, LIBERO `check_success`, MP4 capture, Wilson 95% CIs, appends to
-  `results/sim_success.parquet` `[checkpoint, task, seed, success, steps]`.
-- **World model** (`dreamgrasp/world_model/`): FrameVAE (own small VAE, not SD-VAE —
-  rationale in `vae.py` docstring) + block-causal dynamics transformer over
-  (latent tokens, action token) with a proprio state head. All 5 tier configs + tiny.
-  Fidelity: PSNR/SSIM/LPIPS at {1,8,16,32} + divergence step → `results/wm_fidelity.parquet`.
+## What Was Built
+
+- **Data pipeline** (`dreamgrasp/data/`): LIBERO spatial/object/goal HDF5s converted into a
+  LeRobotDataset v3 artifact: 1500 episodes, 200,485 frames, about 600 MB, AV1 video.
+  Action normalization uses train-split stats in `configs/norm_stats.json`. Splits are frozen
+  in `configs/splits.json`: 960 train / 120 val / 120 test / 300 heldout.
+- **Policy stack** (`dreamgrasp/policy/train.py`): SmolVLA fine-tuning through LeRobot 0.4.4
+  factory/processor APIs, OmegaConf configs, W&B logging, and checkpoint save/reload.
+- **Simulator eval** (`dreamgrasp/eval/sim_eval.py`): seeded LIBERO rollouts, success predicate,
+  MP4 capture, Wilson CIs, and `results/sim_success.parquet`.
+- **World model** (`dreamgrasp/world_model/`): custom FrameVAE plus block-causal dynamics
+  transformer with a proprio state head, tier configs 1-5 plus tiny, and fidelity metrics.
 - **Dream eval** (`dreamgrasp/eval/dream_eval.py`): policy acts on decoded dreamed frames;
-  proprio from the dynamics state head; wrist camera omitted (SmolVLA masks missing cams);
-  seeds from real val clips → `results/dream_success.parquet`.
-- **Success classifier** (`dreamgrasp/eval/success_classifier.py`): frozen SigLIP-base,
-  mean+max temporal pooling, MLP head; trains from sim-eval videos + labels parquet.
-- **Analysis** (`dreamgrasp/eval/correlate.py` + notebook): Spearman ρ with bootstrap CIs,
-  task-level Pearson, trust-region chart, synthetic self-check.
-- **Scaffolds**: report skeleton, Gradio space (verified serving HTTP 200 locally), CI
-  (CPU-only GitHub Actions), scripts/ incl. `reproduce.sh`, `run_study.sh`.
+  proprio comes from the dynamics state head.
+- **Success classifier** (`dreamgrasp/eval/success_classifier.py`): frozen SigLIP-base features
+  with temporal pooling and MLP head.
+- **Analysis and scaffolds**: correlation analysis, notebook, report skeleton, Gradio Space
+  scaffold, CPU CI config, and scripts.
 
-## Verification results (all on MPS, final dataset)
+## Current Verification
 
-| Check | Result |
+The full historical Type 1 gate was reported in the prior local commits, but it has not yet been
+re-verified from a clean clone of a pushed GitHub repo. Treat the table below as local evidence,
+not final Type 1 release evidence.
+
+| Check | Status |
 |---|---|
-| Smoke test (LIBERO render / SmolVLA fwd / W&B) | PASS |
-| Data tests + split leakage + norm round-trip | PASS (8 tests) |
-| Policy tiny (200 steps, bs2, 5 eps, 64px) | loss 0.338 → 0.047, 170 s |
-| Overfit-one-batch (300 steps) | loss 0.297 → **0.009** (< 0.05 bar) |
-| Checkpoint reload + inference | PASS (action (1,7)) |
-| Sim eval tiny (2 tasks × 3 rollouts) | 0/3 successes each (untrained — expected), parquet + videos OK |
-| WM tiny (VAE 150 + dyn 150 steps) | VAE 0.031→0.0075; dyn 1.17→0.015, 19 s |
-| 10-step dream rollout decode | blurry-but-plausible frames (see guide: "blurry is fine") |
-| Fidelity module (val) | PSNR 18.6 / SSIM 0.78 / LPIPS 0.55 @ h=1; divergence 8.0 |
-| Dream loop e2e (20 steps + classifier) | probs ~0.002–0.004, valid parquet |
-| Classifier training loop (56 videos) | runs; val_acc trivial (all-failure labels at tiny scale) |
-| Synthetic correlation recovery | target 0.95 → 0.988; target 0.0 → −0.014 |
-| pytest / ruff / mypy | all green |
-| Loader throughput (M1, workers=0) | policy 425 f/s; WM clips 825 f/s |
+| Local git history | PRESENT: 9 commits on `main`; no remote; no tag |
+| HF dataset | PUBLIC: `zaid9876/world-models-eval` |
+| HF dataset viewer | FIXED at dataset-server `/first-rows`; page cache may lag |
+| LeRobot codebase tag needed | `v3.0` from installed LeRobot 0.4.4; not created yet |
+| Focused local tests after rename | PASS: `python -m pytest tests/test_data.py tests/test_norm.py tests/test_splits.py tests/test_shapes.py tests/test_correlate.py tests/test_no_cuda_literals.py` → 19 passed |
+| Local lint/type checks after rename | PASS: `ruff check .`; `mypy dreamgrasp` |
+| Clean-clone T1.7 gate | NOT RUN; blocked until GitHub repo is pushed |
 
-## Deviations from the guide (details in docs/macos.md, docs/datasets.md)
+## Prior Type 1 Evidence To Re-Run From Clean Clone
 
-1. **Images at native 128×128, not 256×256** — LIBERO raw demos are 128px; upscaling
-   fabricates pixels. WM spec (128px) unaffected; SmolVLA upscales internally.
-2. **mujoco 2.3.7 / robosuite 1.4.1** — robosuite 1.5 broke LIBERO; mujoco 3.x broke
-   robosuite 1.4 (`mj_fullM` signature).
-3. **Own small VAE instead of frozen SD-VAE** — rationale in `world_model/vae.py`.
-4. **lerobot 0.4.4 API** — policies consume processor-pipeline batches
-   (`make_pre_post_processors`), not raw dicts as in the guide's era.
-5. **LIBERO quirks handled in our code, not by patching third_party**: legacy editable
-   install, pre-seeded `~/.libero/config.yaml`, `weights_only=False` for init-state pickles,
-   opengl (bottom-up) frame convention flipped at capture.
+These results were recorded before the GitHub-push gap was found and must be re-run from the
+fresh clone before declaring `v0.1-type1-complete`:
 
-## Known issues for Type 2
+| Check | Prior local result |
+|---|---|
+| Smoke test (LIBERO render / SmolVLA forward / W&B) | PASS |
+| Data tests + split leakage + norm round-trip | PASS |
+| Policy tiny (200 steps, bs2, 5 eps, 64px) | loss 0.338 → 0.047 |
+| Overfit-one-batch (300 steps) | loss 0.297 → 0.009 |
+| Checkpoint reload + inference | PASS |
+| Sim eval tiny (2 tasks × 3 rollouts) | parquet + videos OK |
+| WM tiny (VAE 150 + dyn 150 steps) | VAE and dynamics losses decreased |
+| 10-step dream rollout decode | produced plausible blurry frames |
+| Fidelity module (val) | produced PSNR/SSIM/LPIPS/divergence metrics |
+| Dream loop e2e (20 steps + classifier) | wrote valid parquet |
+| Classifier training loop (56 videos) | ran; accuracy meaningless at tiny scale |
+| Synthetic correlation recovery | target 0.95 → 0.988; target 0.0 → -0.014 |
+| Loader throughput (M1, workers=0) | policy ~425 f/s; WM clips ~825 f/s |
 
-- **Policy action chunk is 8** (guide) vs. smolvla_base pretraining chunk 50 — loads fine
-  (per-step projections), but if fine-tuning underperforms, try chunk 50 first.
-- One transient crash was observed during a bulk conversion while three MPS jobs ran
-  concurrently (memory pressure); a clean re-run completed. Don't convert while training.
-- `results/*.parquet` from Type 1 are tiny-scale smoke artifacts — delete before real runs.
-- Success-classifier val accuracy is meaningless until T2.2 produces both classes; the
-  ≥90% held-out bar applies there.
-- Dream-loop wall-clock on MPS ≈ 1.5 s/dreamed step at 64px (dominated by SmolVLA
-  select_action); budget check (<10 min per triple at N=50, T=200) must be done on CUDA.
+## Deviations From The Guide
 
-## Blocked/external items
+1. **Images at native 128×128, not 256×256**: LIBERO raw demos are 128px. Upscaling would
+   fabricate pixels and increase storage.
+2. **mujoco 2.3.7 / robosuite 1.4.1**: newer versions broke LIBERO/robosuite compatibility.
+3. **Custom small VAE instead of frozen SD-VAE**: rationale is in `world_model/vae.py`.
+4. **LeRobot 0.4.4 API**: policies use processor-pipeline batches.
+5. **LIBERO quirks handled in code**: legacy editable install, local LIBERO config, pickle
+   compatibility, and OpenGL frame flipping.
 
-- **HF dataset publish** to `world-model-eval/dreamgrasp-libero`: ready
-  (`python -m dreamgrasp.data.convert_libero` output + card); requires `hf auth login`
-  on this machine. Status at handoff: (see final commit message / README badge).
+## Undocumented Scope Audit
+
+The previous uncommitted `IMPLEMENTATION_GUIDE.md` contained unsupported uncertainty-estimation
+and counterfactual-diagnostics sections (`T2.3.5` and `T2.5.5`). They were not in the committed
+guide, no `RUNBOOK.md` exists in this workspace, and there is no code/test/script/doc dependency
+on those tasks. They were removed as erroneous scope.
+
+If you want to add them later, treat them as new Type 2+ scope:
+- Uncertainty estimation would produce per-tier uncertainty summaries and analyze whether they
+  predict dream/sim disagreement.
+- Counterfactual diagnostics would search for minimal dreamed action changes that flip model-
+  predicted failures to successes, producing model-based explanations only.
+
+## Blocking Items Before Type 2
+
+1. **GitHub repo creation/push is still missing.**
+   - Local repo exists with real history.
+   - No remote exists.
+   - SSH auth works as GitHub user `ZaidGhazal`.
+   - `gh`/`hub` are not installed and no GitHub API token is available in the shell.
+   - Once the repo exists, push `main`, create and push `v0.1-type1-complete`, then clone it into
+     a temp directory and run the full T1.7 gate there.
+2. **HF codebase-version tag still needs approval.**
+   - Installed LeRobot 0.4.4 reports `CODEBASE_VERSION = "v3.0"`.
+   - Required command to approve: `HfApi().create_tag(repo_id="zaid9876/world-models-eval", repo_type="dataset", tag="v3.0", token=token)`.
+3. **GPU access instructions depend on the final GitHub repo visibility.**
+   - If public: GPU machine can clone the HTTPS/SSH URL.
+   - If private: add this read-only deploy key to the GitHub repo:
+     `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEE1LSgx6k64mOwuTb12eBzLjrjjge0J1TO2HGryOH3V`.
+
+## Known Type 2 Notes
+
+- Policy action chunk is 8 while SmolVLA base pretraining uses chunk 50; if fine-tuning underperforms,
+  try chunk 50 first.
+- Delete Type 1 smoke `results/*.parquet` before real Type 2 runs.
+- Success-classifier accuracy is meaningless until real T2.2 videos contain both classes.
+- Dream-loop wall-clock on MPS was slow; CUDA budget must be checked in Type 2.

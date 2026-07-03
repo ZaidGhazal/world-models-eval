@@ -30,3 +30,7 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
 - 2026-07-03T18:37Z W&B check: run `ua62fo6w` still `running`, latest observed step 401,
   latest observed loss 0.0626, GPU utilization about 89%. No checkpoint expected yet; first
   policy checkpoint is due at step 5,000.
+- 2026-07-03T19:41Z W&B/checkpoint check: run `ua62fo6w` still `running`, latest observed
+  step 4,987, latest observed loss 0.0260, GPU utilization about 91%. First real policy
+  checkpoint exists at `checkpoints/policy/smolvla_libero/step_005000`; keep it as the early
+  low-quality rankable policy unless T2.2 shows it is not sufficiently bad.

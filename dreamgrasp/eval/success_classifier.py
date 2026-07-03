@@ -5,7 +5,7 @@ Train on labeled simulator rollout videos (produced by sim_eval with --video-eve
   python -m dreamgrasp.eval.success_classifier --videos-dir results/videos \
       --labels results/sim_success.parquet --epochs 5 --out checkpoints/classifier
 
-Videos are matched to labels by their `{task}_seed{seed}.mp4` filename.
+Videos are matched to labels by their `{checkpoint}__{task}__seed{seed}.mp4` filename.
 Accuracy bounds every downstream claim — the >=90% held-out bar applies at Type 2 scale.
 """
 
@@ -20,6 +20,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from dreamgrasp.utils.device import get_device
+from dreamgrasp.utils.paths import checkpoint_slug, slugify
 from dreamgrasp.utils.seeding import seed_everything
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -83,7 +84,10 @@ def build_manifest(videos_dir: Path, labels_path: Path) -> list[tuple[Path, int]
     df = pd.read_parquet(labels_path)
     items = []
     for _, r in df.iterrows():
-        path = videos_dir / f"{r['task']}_seed{r['seed']}.mp4"
+        path = videos_dir / f"{checkpoint_slug(r['checkpoint'])}__{slugify(r['task'])}__seed{r['seed']}.mp4"
+        if not path.exists():
+            # Backward-compatible fallback for Type 1 tiny artifacts.
+            path = videos_dir / f"{r['task']}_seed{r['seed']}.mp4"
         if path.exists():
             items.append((path, int(r["success"])))
     return items

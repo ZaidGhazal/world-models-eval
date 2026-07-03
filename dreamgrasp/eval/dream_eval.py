@@ -22,6 +22,7 @@ import torch
 from dreamgrasp.data.loader import ClipDataset, episodes_for_split
 from dreamgrasp.eval.sim_eval import load_policy
 from dreamgrasp.utils.device import get_device
+from dreamgrasp.utils.paths import checkpoint_slug, slugify
 from dreamgrasp.utils.seeding import seed_everything
 from dreamgrasp.utils.video import save_mp4
 from dreamgrasp.world_model.fidelity import load_world_model
@@ -77,6 +78,7 @@ def main() -> None:
     seed_everything(args.seed)
     policy, preprocessor, _ = load_policy(args.policy, device)
     vae, dyn, cfg = load_world_model(args.world_model, device)
+    policy_slug = checkpoint_slug(args.policy)
 
     episodes = episodes_for_split(args.split)
     if args.episodes:
@@ -107,7 +109,8 @@ def main() -> None:
             }
         )
         if args.save_videos:
-            save_mp4(frames, REPO_ROOT / "results" / "dream_videos" / f"{args.wm_tier}_dream{k}.mp4")
+            video_name = f"{slugify(args.wm_tier)}__{policy_slug}__seed{args.seed + k}.mp4"
+            save_mp4(frames, REPO_ROOT / "results" / "dream_videos" / video_name)
         print(f"dream {k}: task='{task_lang}' frames={frames.shape} prob={prob}", flush=True)
 
     df = pd.DataFrame(rows)

@@ -18,6 +18,7 @@ import torch
 from dreamgrasp.data.stats import denormalize, load_stats
 from dreamgrasp.eval.metrics import wilson_ci
 from dreamgrasp.utils.device import get_device
+from dreamgrasp.utils.paths import checkpoint_slug, slugify
 from dreamgrasp.utils.seeding import seed_everything
 from dreamgrasp.utils.video import save_mp4
 
@@ -96,6 +97,7 @@ def main() -> None:
     policy, preprocessor, postprocessor = load_policy(args.checkpoint, device)
     action_stats = load_stats()["action"]
     suite = benchmark.get_benchmark_dict()[args.suite]()
+    ckpt_slug = checkpoint_slug(args.checkpoint)
 
     rows = []
     for task_id in args.task_ids:
@@ -132,9 +134,10 @@ def main() -> None:
                 }
             )
             if k % args.video_every == 0:
+                video_name = f"{ckpt_slug}__{slugify(task.name)}__seed{seed}.mp4"
                 save_mp4(
                     np.stack(frames),
-                    REPO_ROOT / "results" / "videos" / f"{task.name}_seed{seed}.mp4",
+                    REPO_ROOT / "results" / "videos" / video_name,
                 )
             print(f"{task.name} seed={seed} success={success} steps={steps}", flush=True)
         env.close()

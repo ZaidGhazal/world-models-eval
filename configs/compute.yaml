@@ -1,0 +1,47 @@
+# Type 2 hardware record for the prepared GPU machine.
+#
+# This file records the actual single GPU available for the run. It does not select among
+# cloud tiers. Scale remains controlled by the policy/world-model configs and the runbook.
+
+machine:
+  ssh_target: umd-user@141.215.80.58
+  hostname: umd-004061
+  os: Ubuntu 22.04
+
+gpu:
+  name: NVIDIA RTX 4500 Ada Generation
+  count: 1
+  vram_mib: 24570
+  driver_version: "535.309.01"
+  nvidia_smi_cuda_version: "12.2"
+  torch_version: "2.10.0+cu126"
+  torch_cuda_version: "12.6"
+
+runtime:
+  conda_env: world-models-eval
+  mujoco_gl: egl
+  repo_checkout: ~/world-models-eval
+  dataset_repo_id: zaid9876/world-models-eval
+  dataset_url: https://huggingface.co/datasets/zaid9876/world-models-eval
+  dataset_revision: v3.0
+
+defaults:
+  precision: bf16
+  native_image_size: 128
+  openvla_lora: skipped
+  openvla_lora_reason: "24 GB VRAM is reserved for the default SmolVLA + world-model study; optional OpenVLA-7B+LoRA is not required for Type 2."
+  policy:
+    batch_size: 8
+    grad_accum: 8
+    effective_batch_size: 64
+    chunk_size: 8
+  world_model:
+    batch_size: 16
+    image_size: 128
+    tiers: [1, 2, 3, 4, 5]
+
+cut_order:
+  - "Train 3 WM tiers only: 10%, 50%, 100%."
+  - "Reduce world-model image/latent resolution to 64px."
+  - "Use 2 task suites instead of 3."
+  - "Reduce rollout count from N=50 to N=30."

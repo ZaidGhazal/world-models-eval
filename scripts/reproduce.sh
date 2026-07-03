@@ -4,10 +4,24 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-python -m dreamgrasp.data.convert_libero                       # or reuse the published HF dataset
+python - <<'PY'
+from pathlib import Path
+
+from huggingface_hub import snapshot_download
+
+root = Path("data/lerobot/world-models-eval").resolve()
+root.parent.mkdir(parents=True, exist_ok=True)
+snapshot_download(
+    repo_id="zaid9876/world-models-eval",
+    repo_type="dataset",
+    revision="v3.0",
+    local_dir=str(root),
+)
+print(f"dataset ready -> {root}")
+PY
 scripts/train_policy.sh
 for ckpt in checkpoints/policy/smolvla_libero/step_*; do
-    python -m dreamgrasp.eval.sim_eval --checkpoint "$ckpt" \
+    scripts/sim_eval.sh --checkpoint "$ckpt" \
         --suite libero_goal --task-ids 0 1 2 3 4 5 6 7 --n-rollouts 50 --max-steps 400 --video-every 1
 done
 for tier in 1 2 3 4 5; do
@@ -17,7 +31,7 @@ done
 python -m dreamgrasp.eval.success_classifier --epochs 20
 for tier in 1 2 3 4 5; do
     for ckpt in checkpoints/policy/smolvla_libero/step_*; do
-        python -m dreamgrasp.eval.dream_eval --policy "$ckpt" \
+        scripts/dream_eval.sh --policy "$ckpt" \
             --world-model "checkpoints/world_model/tier_${tier}" --wm-tier "tier_${tier}" \
             --n-dreams 50 --horizon 200 --classifier checkpoints/classifier
     done

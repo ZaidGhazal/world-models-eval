@@ -1,10 +1,14 @@
 # Real Type 2 config — CUDA machine. Scale lives here, not in code.
 run_name: smolvla_libero
 pretrained: lerobot/smolvla_base
+dataset_url: https://huggingface.co/datasets/zaid9876/world-models-eval
+dataset_repo_id: zaid9876/world-models-eval
+dataset_revision: v3.0
 dataset_root: data/lerobot/world-models-eval
 split: train
 episodes: null            # null = all episodes in split
 image_size: null          # null = native resolution
+precision: bf16           # Type 2 CUDA target; LeRobot/PyTorch choose supported kernels
 chunk_size: 8
 n_action_steps: 8
 fps: 20

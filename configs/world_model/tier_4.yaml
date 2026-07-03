@@ -1,9 +1,13 @@
 # WM-4: data=1.00, context=4, dynamics 12L/512d
 name: wm_tier4
+dataset_url: https://huggingface.co/datasets/zaid9876/world-models-eval
+dataset_repo_id: zaid9876/world-models-eval
+dataset_revision: v3.0
 dataset_root: data/lerobot/world-models-eval
 split: train
 data_fraction: 1.00
 image_size: 128
+precision: bf16
 latent_dim: 8
 context: 4
 n_layers: 12
@@ -13,7 +17,7 @@ lpips_weight: 0.0
 
 vae_steps: 20000
 dyn_steps: 60000
-batch_size: 32
+batch_size: 16
 lr: 3.0e-4
 warmup_steps: 500
 grad_clip: 1.0

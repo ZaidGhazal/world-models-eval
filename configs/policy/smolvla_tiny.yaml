@@ -1,10 +1,14 @@
 # Mac sanity config — MPS, fp32, minutes not hours.
 run_name: smolvla_tiny
 pretrained: lerobot/smolvla_base
+dataset_url: https://huggingface.co/datasets/zaid9876/world-models-eval
+dataset_repo_id: zaid9876/world-models-eval
+dataset_revision: v3.0
 dataset_root: data/lerobot/world-models-eval
 split: train
 episodes: 5
 image_size: 64
+precision: fp32
 chunk_size: 8
 n_action_steps: 8
 fps: 20

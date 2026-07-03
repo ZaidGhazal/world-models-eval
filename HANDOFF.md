@@ -6,6 +6,7 @@ Type 1 is now verified from a clean clone of the pushed GitHub repository.
 
 - GitHub repository: https://github.com/ZaidGhazal/world-models-eval
 - Release tag: `v0.1-type1-complete`
+- Validated code commit: `9b5b545dfdb5e41b5cc882dfeb928635a18a69de`
 - HF dataset: https://huggingface.co/datasets/zaid9876/world-models-eval
 - HF dataset codebase tag: `v3.0` for LeRobot 0.4.4
 - Public repo access: the GPU machine can clone over HTTPS or SSH. No deploy key is required.
@@ -40,9 +41,13 @@ Clone command used:
 git clone --branch v0.1-type1-complete git@github.com:ZaidGhazal/world-models-eval.git /tmp/world-models-eval-clean.7TidV3/world-models-eval
 ```
 
-The clean clone checked out commit `b623c8a3a57901f5cb2e1ef9ee3aef7f1a5406ad` before this
-handoff documentation update. The release tag is moved to the final documentation commit after
-this file is committed; code under test is unchanged by this documentation-only update.
+The original clean clone checked out commit `b623c8a3a57901f5cb2e1ef9ee3aef7f1a5406ad`. GPU
+bring-up later exposed two fresh-install dependency gaps; the release tag now points at
+`9b5b545dfdb5e41b5cc882dfeb928635a18a69de`, which adds:
+
+- `gradio==4.44.1` instead of `gradio==6.19.0`, because Gradio 6.19 requires
+  `huggingface_hub>=1.2.0` while LeRobot 0.4.4 is pinned to the 0.35.x line.
+- `future==1.0.0`, because `bddl==1.0.1` imports `future.utils` at runtime.
 
 | Check | Clean-clone result |
 |---|---|
@@ -68,6 +73,58 @@ this file is committed; code under test is unchanged by this documentation-only 
 | CI config | PASS: `.github/workflows/ci.yml` present |
 
 The generated clean-clone result schemas were:
+
+- `results/sim_success.parquet`: `(6, 5)`, columns
+  `checkpoint, task, seed, success, steps`.
+- `results/wm_fidelity.parquet`: `(2, 7)`, columns
+  `checkpoint, split, horizon, psnr, ssim, lpips, divergence_step`.
+- `results/dream_success.parquet`: `(2, 5)`, columns
+  `checkpoint, task, wm_tier, seed, dream_success_prob`.
+
+## GPU Bring-Up Verification
+
+GPU machine:
+
+- SSH target: `umd-user@141.215.80.58`
+- Hostname: `umd-004061`
+- OS: Ubuntu 22.04, Linux 6.8
+- GPU: NVIDIA RTX 4500 Ada Generation, 24,570 MiB VRAM
+- Driver: 535.309.01; `nvidia-smi` reports CUDA 12.2
+- Project checkout: `~/world-models-eval`
+- Conda env: `world-models-eval`
+
+GPU setup completed:
+
+- `sudo apt-get install -y ffmpeg libegl1 libgl1 libosmesa6-dev`
+- `git checkout v0.1-type1-complete`; GPU validation ran on code commit
+  `9b5b545dfdb5e41b5cc882dfeb928635a18a69de`
+- `python -m pip install -e ".[dev]"` PASS
+- `python -m pip check` PASS
+- `scripts/setup_libero.sh` PASS, pinned LIBERO commit `8f1084e3132a39270c3a13ebe37270a43ece2a01`
+- HF dataset snapshot downloaded at revision `v3.0`
+- W&B login configured from `w&b.secret`
+
+GPU parity checks with `MUJOCO_GL=egl`:
+
+| Check | GPU result |
+|---|---|
+| CUDA availability | PASS: PyTorch `2.10.0+cu126`, CUDA true, RTX 4500 Ada |
+| LeRobot dataset load | PASS: episode 0 loads, 138 frames, metadata codebase `v3.0` |
+| Full test suite | PASS: `python -m pytest` -> 19 passed |
+| Lint | PASS: `ruff check .` |
+| Types | PASS: `mypy dreamgrasp` |
+| Compile/import | PASS: `compileall`; `space.app.build()` returns `Blocks` |
+| Smoke test | PASS: LIBERO EGL render, SmolVLA forward on CUDA, W&B logging |
+| Synthetic correlation | PASS: target 0.95 -> 0.988; target 0.0 -> -0.014 |
+| Policy tiny train | PASS: 200 steps, loss first10 `0.3397` -> last10 `0.0465`; checkpoint saved |
+| Policy overfit-one-batch | PASS: 200 steps, loss first10 `0.2899` -> last10 `0.0129` |
+| Simulator eval tiny | PASS: 2 tasks x 3 rollouts, 6 parquet rows, videos written |
+| World-model tiny train | PASS: VAE loss `0.03192` -> `0.00768`; dynamics loss `1.11056` -> `0.01465` |
+| Fidelity module | PASS: horizons 1 and 8 wrote PSNR/SSIM/LPIPS/divergence rows |
+| Dream loop tiny | PASS: 2 dreams x 20 frames, parquet and videos written |
+| Classifier training loop | PASS: 6 labeled tiny videos, 1 epoch, checkpoint head saved |
+
+GPU result schemas:
 
 - `results/sim_success.parquet`: `(6, 5)`, columns
   `checkpoint, task, seed, success, steps`.

@@ -13,3 +13,5 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
 - Fix: make shell entrypoints used by `RUNBOOK.md` executable:
   `scripts/train_policy.sh`, `scripts/train_wm_tier.sh`, `scripts/run_study.sh`, and
   `scripts/reproduce.sh`.
+- The `v0.2-type2-ready` tag was moved from `e98b6066e83896c497e23d638a54288ba9887eaf`
+  to the permission-fix commit so the tag resolves to a runnable Type 2 checkout.

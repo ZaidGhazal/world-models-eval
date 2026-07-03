@@ -18,6 +18,7 @@ dependencies = [
     "mujoco==2.3.7",
     "robosuite==1.4.1",
     "bddl==1.0.1",
+    "future==1.0.0",
     "gym==0.26.2",
     "easydict==1.13",
     "matplotlib==3.10.9",

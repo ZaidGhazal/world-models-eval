@@ -21,3 +21,12 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   (`smolvla_libero`). Dataset loaded: 960 train episodes, 130,386 frames.
   First logged step: step 0, loss 0.6479. Acceptance pending until 40k steps
   finish and checkpoints reload.
+- While T2.1 was running, downstream launch blockers were fixed on `main` for later phases:
+  checkpoint-specific simulator/dream video filenames to avoid T2.2/T2.5 overwrites, a
+  classifier manifest lookup matching those filenames, and T2.4 classifier W&B logging plus
+  saved confusion/metrics files with a hard failure below 90% held-out accuracy. These changes
+  do not affect the active T2.1 process and will be pulled on the GPU after policy training
+  finishes.
+- 2026-07-03T18:37Z W&B check: run `ua62fo6w` still `running`, latest observed step 401,
+  latest observed loss 0.0626, GPU utilization about 89%. No checkpoint expected yet; first
+  policy checkpoint is due at step 5,000.

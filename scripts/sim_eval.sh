@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 
 if [[ "${1:-}" == "--dry-run" ]]; then
     shift
-    ckpt="checkpoints/dry_run/policy/step_000004"
+    ckpt="checkpoints/dry_run/policy/step_000020"
     if [[ ! -d "$ckpt" ]]; then
         ckpt="checkpoints/policy/smolvla_tiny/step_000200"
     fi

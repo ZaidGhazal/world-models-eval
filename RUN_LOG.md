@@ -15,3 +15,9 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   `scripts/reproduce.sh`.
 - The `v0.2-type2-ready` tag was moved from `e98b6066e83896c497e23d638a54288ba9887eaf`
   to the permission-fix commit so the tag resolves to a runnable Type 2 checkout.
+- 2026-07-03T18:20:13Z: Relaunched real T2.1 from corrected `v0.2-type2-ready`
+  (`2d56b7cc99ddc8a889872e5a792fcdb6b7c0f115`) on `umd-004061`.
+  Command: `scripts/train_policy.sh`. W&B run: `ua62fo6w`
+  (`smolvla_libero`). Dataset loaded: 960 train episodes, 130,386 frames.
+  First logged step: step 0, loss 0.6479. Acceptance pending until 40k steps
+  finish and checkpoints reload.

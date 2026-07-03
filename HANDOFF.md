@@ -1,11 +1,14 @@
-# Type 1 → Type 2 Handoff
+# Type 1 -> Type 2 Handoff
 
 Status date: 2026-07-02.
 
-This repository has real local git history on `main`, but it has not yet been pushed to GitHub
-because no GitHub remote exists and this machine has SSH auth but no repo-creation CLI/API token.
-Do not start Type 2 until the GitHub repo is created, this history is pushed, the
-`v0.1-type1-complete` tag is pushed, and the T1.7 gate is re-run from a clean clone.
+Type 1 is now verified from a clean clone of the pushed GitHub repository.
+
+- GitHub repository: https://github.com/ZaidGhazal/world-models-eval
+- Release tag: `v0.1-type1-complete`
+- HF dataset: https://huggingface.co/datasets/zaid9876/world-models-eval
+- HF dataset codebase tag: `v3.0` for LeRobot 0.4.4
+- Public repo access: the GPU machine can clone over HTTPS or SSH. No deploy key is required.
 
 ## What Was Built
 
@@ -26,46 +29,89 @@ Do not start Type 2 until the GitHub repo is created, this history is pushed, th
 - **Analysis and scaffolds**: correlation analysis, notebook, report skeleton, Gradio Space
   scaffold, CPU CI config, and scripts.
 
-## Current Verification
+## Clean-Clone Verification
 
-The full historical Type 1 gate was reported in the prior local commits, but it has not yet been
-re-verified from a clean clone of a pushed GitHub repo. Treat the table below as local evidence,
-not final Type 1 release evidence.
+Verification clone:
+`/tmp/world-models-eval-clean.7TidV3/world-models-eval`
 
-| Check | Status |
+Clone command used:
+
+```bash
+git clone --branch v0.1-type1-complete git@github.com:ZaidGhazal/world-models-eval.git /tmp/world-models-eval-clean.7TidV3/world-models-eval
+```
+
+The clean clone checked out commit `b623c8a3a57901f5cb2e1ef9ee3aef7f1a5406ad` before this
+handoff documentation update. The release tag is moved to the final documentation commit after
+this file is committed; code under test is unchanged by this documentation-only update.
+
+| Check | Clean-clone result |
 |---|---|
-| Local git history | PRESENT: 9 commits on `main`; no remote; no tag |
-| HF dataset | PUBLIC: `zaid9876/world-models-eval` |
-| HF dataset viewer | FIXED at dataset-server `/first-rows`; page cache may lag |
-| LeRobot codebase tag needed | `v3.0` from installed LeRobot 0.4.4; not created yet |
-| Focused local tests after rename | PASS: `python -m pytest tests/test_data.py tests/test_norm.py tests/test_splits.py tests/test_shapes.py tests/test_correlate.py tests/test_no_cuda_literals.py` → 19 passed |
-| Local lint/type checks after rename | PASS: `ruff check .`; `mypy dreamgrasp` |
-| Clean-clone T1.7 gate | NOT RUN; blocked until GitHub repo is pushed |
+| Install package | PASS: `python -m pip install -e . --no-deps` |
+| LIBERO setup | PASS: `scripts/setup_libero.sh`, pinned commit `8f1084e3132a39270c3a13ebe37270a43ece2a01` |
+| HF dataset download | PASS: `snapshot_download(... revision="v3.0")` into `data/lerobot/world-models-eval` |
+| LeRobot local load | PASS: episode 0 loads, 138 frames, dataset metadata codebase `v3.0` |
+| Smoke test | PASS: LIBERO render, SmolVLA forward on MPS, W&B logging |
+| Full test suite | PASS: `python -m pytest` -> 19 passed |
+| Lint | PASS: `ruff check .` |
+| Types | PASS: `mypy dreamgrasp` |
+| Policy tiny train | PASS: 200 steps, loss first10 `0.3380` -> last10 `0.0465`; checkpoint saved |
+| Policy overfit-one-batch | PASS: 200 steps, loss first10 `0.2935` -> last10 `0.0119` |
+| Simulator eval tiny | PASS: 2 tasks x 3 rollouts, 6 parquet rows, videos written |
+| World-model tiny train | PASS: VAE loss `0.03084` -> `0.00750`; dynamics loss `1.17244` -> `0.01521` |
+| Fidelity module | PASS: horizons 1 and 8 wrote PSNR/SSIM/LPIPS/divergence rows |
+| Dream loop tiny | PASS: 2 dreams x 20 frames, parquet and videos written |
+| Classifier training loop | PASS: 6 labeled tiny videos, 1 epoch, checkpoint head saved |
+| Synthetic correlation | PASS: target 0.95 -> 0.988; target 0.0 -> -0.014 |
+| No CUDA literals | PASS via `tests/test_no_cuda_literals.py` |
+| Tier configs | PASS: `tier_1.yaml` through `tier_5.yaml` and `tiny.yaml` present |
+| macOS notes | PASS: `docs/macos.md` present |
+| CI config | PASS: `.github/workflows/ci.yml` present |
 
-## Prior Type 1 Evidence To Re-Run From Clean Clone
+The generated clean-clone result schemas were:
 
-These results were recorded before the GitHub-push gap was found and must be re-run from the
-fresh clone before declaring `v0.1-type1-complete`:
+- `results/sim_success.parquet`: `(6, 5)`, columns
+  `checkpoint, task, seed, success, steps`.
+- `results/wm_fidelity.parquet`: `(2, 7)`, columns
+  `checkpoint, split, horizon, psnr, ssim, lpips, divergence_step`.
+- `results/dream_success.parquet`: `(2, 5)`, columns
+  `checkpoint, task, wm_tier, seed, dream_success_prob`.
 
-| Check | Prior local result |
-|---|---|
-| Smoke test (LIBERO render / SmolVLA forward / W&B) | PASS |
-| Data tests + split leakage + norm round-trip | PASS |
-| Policy tiny (200 steps, bs2, 5 eps, 64px) | loss 0.338 → 0.047 |
-| Overfit-one-batch (300 steps) | loss 0.297 → 0.009 |
-| Checkpoint reload + inference | PASS |
-| Sim eval tiny (2 tasks × 3 rollouts) | parquet + videos OK |
-| WM tiny (VAE 150 + dyn 150 steps) | VAE and dynamics losses decreased |
-| 10-step dream rollout decode | produced plausible blurry frames |
-| Fidelity module (val) | produced PSNR/SSIM/LPIPS/divergence metrics |
-| Dream loop e2e (20 steps + classifier) | wrote valid parquet |
-| Classifier training loop (56 videos) | ran; accuracy meaningless at tiny scale |
-| Synthetic correlation recovery | target 0.95 → 0.988; target 0.0 → -0.014 |
-| Loader throughput (M1, workers=0) | policy ~425 f/s; WM clips ~825 f/s |
+## HF Dataset Status
+
+- Dataset repo: `zaid9876/world-models-eval`
+- Codebase tag: `v3.0`, target commit `d56cbc3c472efc52895be7a9ad4b35f7612db3c5`
+- Dataset-server checks:
+  - `/splits`: 200, no `CastError`, no `StreamingRowsError`
+  - `/first-rows`: 200, no `CastError`, no `StreamingRowsError`
+  - `/is-valid`: `viewer=true`, `preview=true`, `filter=true`, `statistics=true`
+  - `/parquet`: 200 with generated train parquet
+  - `/size`: 200 with 200,485 rows
+- The public Hub page rendered with the viewer after a no-cache request. A stale bare-page cache
+  previously still contained the old CastError, but the live backend and no-cache page are fixed.
+
+## GitHub And GPU Access
+
+The repository is public. On the GPU machine:
+
+```bash
+git clone https://github.com/ZaidGhazal/world-models-eval.git
+cd world-models-eval
+git checkout v0.1-type1-complete
+```
+
+SSH is also fine:
+
+```bash
+git clone git@github.com:ZaidGhazal/world-models-eval.git
+cd world-models-eval
+git checkout v0.1-type1-complete
+```
+
+The read-only deploy key from the request is not needed while the repository remains public.
 
 ## Deviations From The Guide
 
-1. **Images at native 128×128, not 256×256**: LIBERO raw demos are 128px. Upscaling would
+1. **Images at native 128x128, not 256x256**: LIBERO raw demos are 128px. Upscaling would
    fabricate pixels and increase storage.
 2. **mujoco 2.3.7 / robosuite 1.4.1**: newer versions broke LIBERO/robosuite compatibility.
 3. **Custom small VAE instead of frozen SD-VAE**: rationale is in `world_model/vae.py`.
@@ -81,27 +127,11 @@ guide, no `RUNBOOK.md` exists in this workspace, and there is no code/test/scrip
 on those tasks. They were removed as erroneous scope.
 
 If you want to add them later, treat them as new Type 2+ scope:
+
 - Uncertainty estimation would produce per-tier uncertainty summaries and analyze whether they
   predict dream/sim disagreement.
 - Counterfactual diagnostics would search for minimal dreamed action changes that flip model-
   predicted failures to successes, producing model-based explanations only.
-
-## Blocking Items Before Type 2
-
-1. **GitHub repo creation/push is still missing.**
-   - Local repo exists with real history.
-   - No remote exists.
-   - SSH auth works as GitHub user `ZaidGhazal`.
-   - `gh`/`hub` are not installed and no GitHub API token is available in the shell.
-   - Once the repo exists, push `main`, create and push `v0.1-type1-complete`, then clone it into
-     a temp directory and run the full T1.7 gate there.
-2. **HF codebase-version tag still needs approval.**
-   - Installed LeRobot 0.4.4 reports `CODEBASE_VERSION = "v3.0"`.
-   - Required command to approve: `HfApi().create_tag(repo_id="zaid9876/world-models-eval", repo_type="dataset", tag="v3.0", token=token)`.
-3. **GPU access instructions depend on the final GitHub repo visibility.**
-   - If public: GPU machine can clone the HTTPS/SSH URL.
-   - If private: add this read-only deploy key to the GitHub repo:
-     `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEE1LSgx6k64mOwuTb12eBzLjrjjge0J1TO2HGryOH3V`.
 
 ## Known Type 2 Notes
 

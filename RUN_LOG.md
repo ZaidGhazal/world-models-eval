@@ -50,3 +50,13 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   `w8a5h3qm` (`sim_eval_smolvla_libero_step_005000`). First observed W&B rows: 3 rollouts,
   all failures at 400 steps for the early 5k checkpoint. Acceptance pending until the full
   simulator parquet is written and `python -m dreamgrasp.eval.acceptance sim` passes.
+
+### T2.3 World-Model Family
+
+- 2026-07-04T15:53Z: Started WM tier 1 concurrently with T2.2 in tmux session
+  `t23_wm_tier1`, because T2.3 trains from the fixed LeRobot dataset and is independent of
+  simulator-eval outputs. W&B run: `eyqmis9r` (`wm_tier1`). Startup check: T2.2 and T2.3
+  both alive; GPU memory `5326 MiB / 24570 MiB`; GPU utilization about 97%; no OOM. WM-1
+  loaded 16,272 clips and reached VAE step 600 with loss down from 0.06689 to 0.00189.
+  T2.3 acceptance remains pending until the tier finishes, fidelity is computed, and the
+  full tier family passes monotonicity checks.

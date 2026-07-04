@@ -34,3 +34,19 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   step 4,987, latest observed loss 0.0260, GPU utilization about 91%. First real policy
   checkpoint exists at `checkpoints/policy/smolvla_libero/step_005000`; keep it as the early
   low-quality rankable policy unless T2.2 shows it is not sufficiently bad.
+- 2026-07-04T15:15Z: T2.1 completed. W&B run `ua62fo6w` state `finished`, `step_040000`
+  checkpoint saved, `loss_first10=0.6422`, `loss_last10=0.0192`, runtime `38879.7s`
+  (`10.8` GPU-hours). GPU idle afterward.
+- 2026-07-04T15:27Z: T2.1 acceptance PASS. All eight saved policy checkpoints
+  (`step_005000` through `step_040000`, every 5k) reloaded on CUDA with
+  `dreamgrasp.eval.sim_eval.load_policy`.
+
+### T2.2 Ground-Truth Simulator Evaluation
+
+- 2026-07-04T15:29Z: Launched real T2.2 in tmux session `t22_sim_eval` using
+  `scripts/run_t2_2_sim_eval.sh`. The wrapper runs the RUNBOOK simulator command over all
+  `checkpoints/policy/smolvla_libero/step_*` checkpoints, 8 `libero_goal` task ids, 50
+  rollouts, max 400 steps, and `--video-every 1`. First W&B run:
+  `w8a5h3qm` (`sim_eval_smolvla_libero_step_005000`). First observed W&B rows: 3 rollouts,
+  all failures at 400 steps for the early 5k checkpoint. Acceptance pending until the full
+  simulator parquet is written and `python -m dreamgrasp.eval.acceptance sim` passes.

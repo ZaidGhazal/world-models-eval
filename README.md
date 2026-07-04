@@ -1,10 +1,12 @@
-# World Models Eval
+# DreamGrasp
 
 **How good must a learned world model be before you can trust it to evaluate robot policies?**
 
-World Models Eval is a single-GPU, fully reproducible study measuring the relationship between world-model
-quality and the reliability of world-model-based policy evaluation, on LIBERO manipulation tasks with
-SmolVLA policies.
+DreamGrasp is a processed robotics dataset and single-GPU study harness for testing when
+learned world models can be trusted to evaluate robot policies. It turns LIBERO manipulation
+demonstrations into a LeRobotDataset-v3 release with fixed splits, held-out tasks,
+normalization stats, policy/world-model training configs, simulator evaluation, and dreamed
+rollout calibration.
 
 This project **builds on** prior work in world-model-based policy evaluation — it does not claim to
 invent it:
@@ -15,8 +17,9 @@ invent it:
 - **SIMPLER** — [arXiv:2405.05941](https://arxiv.org/abs/2405.05941)
 - **RoboWM-Bench** — [arXiv:2604.19092](https://arxiv.org/abs/2604.19092)
 
-Our contributions are (1) the **quality→reliability calibration curve** ("trust region") and
-(2) the **open single-GPU harness** that produces it.
+Our contributions are (1) the **DreamGrasp dataset** for policy/world-model evaluation,
+(2) the **quality→reliability calibration curve** ("trust region"), and (3) the **open
+single-GPU harness** that produces it.
 
 ## Status
 

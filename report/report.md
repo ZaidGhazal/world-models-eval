@@ -1,6 +1,6 @@
-# How Good Must a World Model Be Before You Can Trust It to Evaluate Robot Policies?
+# DreamGrasp: How Good Must a World Model Be Before You Can Trust It to Evaluate Robot Policies?
 
-*(World Models Eval technical report — skeleton; numbers filled in during Type 2.)*
+*(DreamGrasp technical report — skeleton; numbers filled in during Type 2.)*
 
 ## Abstract
 

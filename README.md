@@ -1,5 +1,7 @@
 # DreamGrasp
 
+![DreamGrasp banner](assets/dreamgrasp/dreamgrasp-hf-banner.png)
+
 **How good must a learned world model be before you can trust it to evaluate robot policies?**
 
 DreamGrasp is a processed robotics dataset and single-GPU study harness for testing when

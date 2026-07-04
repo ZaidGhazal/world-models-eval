@@ -60,3 +60,13 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   loaded 16,272 clips and reached VAE step 600 with loss down from 0.06689 to 0.00189.
   T2.3 acceptance remains pending until the tier finishes, fidelity is computed, and the
   full tier family passes monotonicity checks.
+- 2026-07-04T18:00Z: WM tier 1 training finished successfully. Artifacts written:
+  `checkpoints/world_model/tier_1/vae.pt`, `dynamics.pt`, and `config.yaml`. Dynamics loss
+  decreased from mean first10 `2.03667` to mean last10 `0.00338`. W&B run `eyqmis9r`
+  finished and synced.
+- 2026-07-04T18:03Z: WM tier 1 fidelity completed and wrote
+  `results/wm_fidelity.parquet` with horizons 1, 8, 16, 32. Metrics:
+  horizon 1 PSNR `26.811`, SSIM `0.943`, LPIPS `0.134`; horizon 8 PSNR `21.080`,
+  SSIM `0.748`, LPIPS `0.250`; horizon 16 PSNR `19.467`, SSIM `0.692`,
+  LPIPS `0.294`; horizon 32 PSNR `17.967`, SSIM `0.661`, LPIPS `0.320`;
+  mean divergence step `19.8125`.

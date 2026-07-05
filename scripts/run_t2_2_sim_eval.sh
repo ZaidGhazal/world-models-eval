@@ -8,6 +8,8 @@ task_plan="$(mktemp)"
 trap 'rm -f "${task_plan}"' EXIT
 python - <<'PY' > "${task_plan}"
 import json
+import contextlib
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -21,7 +23,8 @@ for row in splits:
         targets[(row["suite"], row["split"])].add(row["task"].removesuffix("_demo"))
 
 for suite_name in ["libero_spatial", "libero_object", "libero_goal"]:
-    suite = benchmark.get_benchmark_dict()[suite_name]()
+    with contextlib.redirect_stdout(sys.stderr):
+        suite = benchmark.get_benchmark_dict()[suite_name]()
     task_ids = {}
     for idx in range(100):
         try:

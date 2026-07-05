@@ -90,6 +90,12 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   runtime (`44-45` GPU wall-clock hours). If the corrected run still misses the 25-point
   train-split spread requirement, stop and report before proposing or launching any next
   step such as increasing rollout count.
+- 2026-07-05T15:28Z: First clean-rerun launch attempt exited after 3 seconds before any
+  rollout work. Cause: LIBERO printed its task-order info line to stdout while
+  `scripts/run_t2_2_sim_eval.sh` was generating the tab-separated task plan, so the shell
+  parsed that info line as a suite and `sim_eval.py` rejected an empty `--task-ids` list.
+  GPU-hours consumed: effectively 0.0. Fix: redirect LIBERO task-order stdout to stderr
+  during task-plan generation, then relaunch cleanly.
 
 ### T2.3 World-Model Family
 

@@ -50,6 +50,16 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   `w8a5h3qm` (`sim_eval_smolvla_libero_step_005000`). First observed W&B rows: 3 rollouts,
   all failures at 400 steps for the early 5k checkpoint. Acceptance pending until the full
   simulator parquet is written and `python -m dreamgrasp.eval.acceptance sim` passes.
+- 2026-07-05T03:23Z: T2.2 job completed with `EXIT_STATUS=0` and wrote 3,200 rows to
+  `results/sim_success.parquet` (8 checkpoints x 8 tasks x 50 rollouts). Runtime was about
+  11.9 wall-clock GPU-hours. The acceptance check failed because checkpoint spread was below
+  the required 25 points:
+  `step_005000=0.0250`, `step_010000=0.0375`, `step_020000=0.1400`,
+  `step_030000=0.1525`, `step_015000=0.1575`, `step_040000=0.1825`,
+  `step_035000=0.1875`, `step_025000=0.2000`; best `0.2000`, worst `0.0250`,
+  spread `0.1750`. T2.2 is therefore not accepted. Do not advance to T2.4/T2.5 until the
+  simulator-eval gap is diagnosed; likely next checks are action normalization, task/camera
+  alignment, and checkpoint-ranking assumptions.
 
 ### T2.3 World-Model Family
 

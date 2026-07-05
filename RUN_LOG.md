@@ -125,3 +125,13 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   SSIM `0.748`, LPIPS `0.250`; horizon 16 PSNR `19.467`, SSIM `0.692`,
   LPIPS `0.294`; horizon 32 PSNR `17.967`, SSIM `0.661`, LPIPS `0.320`;
   mean divergence step `19.8125`.
+- 2026-07-05T16:14Z: Started WM tier 2 concurrently with the clean T2.2 rerun in tmux
+  session `t23_wm_tier2`, because T2.3 trains from the fixed LeRobot dataset and remains
+  independent of simulator-eval outputs. Command sequence: `scripts/train_wm_tier.sh 2`,
+  then `python -m dreamgrasp.world_model.fidelity --checkpoint checkpoints/world_model/tier_2
+  --split val --n-clips 16 --horizons 1 8 16 32` only if training exits successfully. W&B
+  run: `rsa2f1vy` (`wm_tier2`). Startup check: T2.2 and T2.3 both alive; T2.2 was still
+  writing rollout lines from `libero_spatial/train`, tier 2 loaded 31,447 clips, VAE loss
+  decreased from `0.06652` at step 0 to `0.00115` by step 1100, and GPU memory remained
+  `5404 MiB / 24570 MiB` with temperature `73C`. No OOM or resource contention observed.
+  T2.3 tier 2 acceptance remains pending until training and fidelity complete.

@@ -84,6 +84,12 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   partial reuse run that keeps the already-evaluated 6 train + 2 held-out tasks and adds the
   missing 22 tasks would be about 32-33 GPU-hours, but a clean rerun is simpler and less
   error-prone for reporting.
+- 2026-07-05T15:00Z: User approved the full clean corrected T2.2 rerun across all 30
+  split-defined tasks, not partial reuse. Reasoning: a clean rerun avoids mixed old/new
+  parquet bookkeeping and makes the report easier to audit, despite the higher estimated
+  runtime (`44-45` GPU wall-clock hours). If the corrected run still misses the 25-point
+  train-split spread requirement, stop and report before proposing or launching any next
+  step such as increasing rollout count.
 
 ### T2.3 World-Model Family
 

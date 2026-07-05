@@ -96,6 +96,15 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   parsed that info line as a suite and `sim_eval.py` rejected an empty `--task-ids` list.
   GPU-hours consumed: effectively 0.0. Fix: redirect LIBERO task-order stdout to stderr
   during task-plan generation, then relaunch cleanly.
+- 2026-07-05T15:29Z: Relaunched the approved clean T2.2 rerun in tmux session
+  `t22_sim_eval_clean` from commit `402ef702e7791c92ca97a5399c70f5f9de07962d`.
+  Previous failed T2.2 artifacts were archived under
+  `results/archive/t2_2_failed_20260705_20260705T152816Z`, and the 3-second failed-launch
+  log was preserved as `logs/t2.2_clean_rerun_launch_failed_20260705T1528.log`. The clean
+  run is writing to `logs/t2.2_clean_rerun.log`; first W&B run is `3et5zrab`
+  (`sim_eval_smolvla_libero_step_005000`) for `libero_spatial/train` with task IDs
+  `0 2 4 6 8 1 3 5`. Acceptance remains pending until the full 30-task rerun finishes and
+  `python -m dreamgrasp.eval.acceptance sim --split train` passes.
 
 ### T2.3 World-Model Family
 

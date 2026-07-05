@@ -60,6 +60,30 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   spread `0.1750`. T2.2 is therefore not accepted. Do not advance to T2.4/T2.5 until the
   simulator-eval gap is diagnosed; likely next checks are action normalization, task/camera
   alignment, and checkpoint-ranking assumptions.
+- 2026-07-05T14:35Z: T2.2 diagnosis found a launch-scope/task-ID bug. Normalization was not
+  the cause: `sim_eval.py` loaded `/home/umd-user/world-models-eval/configs/norm_stats.json`
+  (`sha256=65510e254754d338121312e1a0395aa984a48a40c618a9f306fb68aa5a7a8fda`), the same
+  checked-in stats used by T2.1, and an 8-step probe from `step_040000` produced normalized
+  actions roughly in `[-1.01, 0.47]` with denormalized LIBERO commands inside the demo action
+  range. Camera keys and resolution also matched training (`agentview`, `wrist`, 128x128).
+  The real bug was that `scripts/run_t2_2_sim_eval.sh` hardcoded `libero_goal --task-ids
+  0 1 2 3 4 5 6 7`. LIBERO's task-id order does not match `configs/splits.json`: those IDs
+  included two held-out tasks (`put_the_wine_bottle_on_top_of_the_cabinet`,
+  `turn_on_the_stove`) that had 0% success for every checkpoint, while two train tasks
+  (`put_the_bowl_on_the_plate`, `put_the_wine_bottle_on_the_rack`) were never evaluated.
+  It also omitted all train tasks from `libero_spatial` and `libero_object`, despite T2.1
+  training on the merged three-suite train split. Filtering the existing rows to the six
+  evaluated train tasks raises best success from `0.2000` to `0.2667` and spread from
+  `0.1750` to `0.2333`, so the bad task selection materially depressed the gate. Bootstrap
+  on the original 3,200 rows gave spread 95% CI `[0.1525, 0.2200]` and `P(spread>=0.25)
+  =0.0002`; the failure is not statistical noise.
+- Fix prepared on `main`: make T2.2 derive train/held-out task IDs from `configs/splits.json`,
+  record `suite` and `split` in `results/sim_success.parquet`, and run acceptance on
+  `--split train`. A clean corrected T2.2 rerun over 30 tasks (24 train + 6 held-out) is
+  estimated at about 44-45 GPU-hours based on the previous 11.9h / 3,200-row runtime. A
+  partial reuse run that keeps the already-evaluated 6 train + 2 held-out tasks and adds the
+  missing 22 tasks would be about 32-33 GPU-hours, but a clean rerun is simpler and less
+  error-prone for reporting.
 
 ### T2.3 World-Model Family
 

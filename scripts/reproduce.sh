@@ -20,10 +20,7 @@ snapshot_download(
 print(f"dataset ready -> {root}")
 PY
 scripts/train_policy.sh
-for ckpt in checkpoints/policy/smolvla_libero/step_*; do
-    scripts/sim_eval.sh --checkpoint "$ckpt" \
-        --suite libero_goal --task-ids 0 1 2 3 4 5 6 7 --n-rollouts 50 --max-steps 400 --video-every 1
-done
+scripts/run_t2_2_sim_eval.sh
 for tier in 1 2 3 4 5; do
     scripts/train_wm_tier.sh "$tier"
     python -m dreamgrasp.world_model.fidelity --checkpoint "checkpoints/world_model/tier_${tier}"

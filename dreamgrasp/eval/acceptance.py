@@ -14,15 +14,20 @@ def require_columns(df: pd.DataFrame, columns: list[str], path: Path) -> None:
         raise SystemExit(f"{path} missing columns: {missing}")
 
 
-def check_sim(path: Path, min_best: float, min_spread: float) -> None:
+def check_sim(path: Path, min_best: float, min_spread: float, split: str | None) -> None:
     df = pd.read_parquet(path)
     require_columns(df, ["checkpoint", "task", "seed", "success", "steps"], path)
+    if split and "split" in df.columns:
+        df = df[df["split"] == split]
+        if df.empty:
+            raise SystemExit(f"T2.2 FAILED: no rows for split={split!r}")
     by_ckpt = df.groupby("checkpoint")["success"].mean().sort_values()
     spread = float(by_ckpt.iloc[-1] - by_ckpt.iloc[0])
     best = float(by_ckpt.iloc[-1])
     print("sim success by checkpoint:")
     print(by_ckpt.to_string())
-    print(f"best={best:.3f} spread={spread:.3f} rows={len(df)}")
+    split_msg = f" split={split}" if split and "split" in df.columns else ""
+    print(f"best={best:.3f} spread={spread:.3f} rows={len(df)}{split_msg}")
     if best < min_best:
         raise SystemExit(f"T2.2 FAILED: best success {best:.3f} < {min_best:.3f}")
     if spread < min_spread:
@@ -66,6 +71,7 @@ def main() -> None:
     sim.add_argument("--path", type=Path, default=REPO_ROOT / "results" / "sim_success.parquet")
     sim.add_argument("--min-best", type=float, default=0.20)
     sim.add_argument("--min-spread", type=float, default=0.25)
+    sim.add_argument("--split", default=None, help="optional split filter when sim parquet has a split column")
     wm = sub.add_parser("wm")
     wm.add_argument("--path", type=Path, default=REPO_ROOT / "results" / "wm_fidelity.parquet")
     dream = sub.add_parser("dream")
@@ -73,7 +79,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.phase == "sim":
-        check_sim(args.path, args.min_best, args.min_spread)
+        check_sim(args.path, args.min_best, args.min_spread, args.split)
     elif args.phase == "wm":
         check_wm(args.path)
     elif args.phase == "dream":

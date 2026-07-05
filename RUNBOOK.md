@@ -59,14 +59,12 @@ Acceptance:
 
 ## T2.2 Ground-Truth Simulator Evaluation
 
-Run each rankable checkpoint over the real task set:
+Run each rankable checkpoint over the split-defined real task set. The runner derives LIBERO
+task IDs from `configs/splits.json`; do not hardcode task IDs, because LIBERO's task order is
+not the same as the split file order.
 
 ```bash
-for ckpt in checkpoints/policy/smolvla_libero/step_*; do
-  scripts/sim_eval.sh --checkpoint "$ckpt" \
-    --suite libero_goal --task-ids 0 1 2 3 4 5 6 7 \
-    --n-rollouts 50 --max-steps 400 --video-every 1
-done
+scripts/run_t2_2_sim_eval.sh
 ```
 
 Produces:
@@ -76,17 +74,20 @@ Produces:
 
 Acceptance:
 
-- Parquet columns: `checkpoint, task, seed, success, steps`.
+- Parquet columns: `checkpoint, suite, split, task, seed, success, steps`.
 - Wilson CIs print per task.
-- Best checkpoint reaches a sane LIBERO success rate; if best is below 20%, debug
-  normalization/camera/action keys before continuing.
-- Spread between worst and best policy is at least 25 points.
+- The train split covers all train tasks from the merged `libero_spatial`, `libero_object`,
+  and `libero_goal` suites; held-out rows are collected for T2.6 but are not used for the
+  in-distribution policy-spread gate.
+- Best checkpoint reaches a sane LIBERO train-split success rate; if best is below 20%,
+  debug normalization/camera/action keys before continuing.
+- Spread between worst and best policy on the train split is at least 25 points.
 - Add 20 categorized failure videos to `docs/failures.md`.
 
 Acceptance command:
 
 ```bash
-python -m dreamgrasp.eval.acceptance sim
+python -m dreamgrasp.eval.acceptance sim --split train
 ```
 
 ## T2.3 World-Model Family

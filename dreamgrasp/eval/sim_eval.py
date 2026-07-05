@@ -87,6 +87,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--video-every", type=int, default=10)
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "results" / "sim_success.parquet")
+    parser.add_argument("--split-label", default=None, help="optional split label recorded in output rows")
     parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
     parser.add_argument("--run-name", default=None)
     args = parser.parse_args()
@@ -155,6 +156,8 @@ def main() -> None:
             rows.append(
                 {
                     "checkpoint": str(args.checkpoint),
+                    "suite": args.suite,
+                    "split": args.split_label,
                     "task": task.name,
                     "seed": seed,
                     "success": bool(success),

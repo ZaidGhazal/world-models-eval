@@ -148,3 +148,16 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   from `0.05455` at step 0 to `0.00191` by step 600, GPU memory remained
   `7552 MiB / 24570 MiB`, and temperature was `75C`. No OOM or resource contention observed.
   T2.3 tier 3 acceptance remains pending until training and fidelity complete.
+- 2026-07-06T08:47Z: WM tier 3 training and fidelity completed successfully. Fidelity wrote
+  tier 3 rows to `results/wm_fidelity.parquet`: horizon 1 PSNR `30.276`, SSIM `0.984`,
+  LPIPS `0.046`; horizon 8 PSNR `26.420`, SSIM `0.955`, LPIPS `0.079`; horizon 16 PSNR
+  `24.948`, SSIM `0.938`, LPIPS `0.096`; horizon 32 PSNR `22.541`, SSIM `0.900`,
+  LPIPS `0.121`; mean divergence step `20.375`.
+- 2026-07-06T14:19Z: Started WM tier 4 concurrently with the clean T2.2 rerun in tmux
+  session `t23_wm_tier4` after confirming tier 3 had finished and GPU memory was low
+  (`1357 MiB / 24570 MiB`). Command sequence mirrors tiers 2-3: `scripts/train_wm_tier.sh 4`,
+  then tier 4 fidelity if training exits successfully. W&B run: `y3ueubkp` (`wm_tier4`).
+  Startup check: T2.2 and T2.3 both alive; tier 4 loaded 126,546 clips, VAE loss decreased
+  from `0.05597` at step 0 to `0.00301` by step 400, GPU memory remained
+  `7262 MiB / 24570 MiB`, and temperature was `71C`. No OOM or resource contention observed.
+  T2.3 tier 4 acceptance remains pending until training and fidelity complete.

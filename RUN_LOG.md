@@ -161,3 +161,8 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   from `0.05597` at step 0 to `0.00301` by step 400, GPU memory remained
   `7262 MiB / 24570 MiB`, and temperature was `71C`. No OOM or resource contention observed.
   T2.3 tier 4 acceptance remains pending until training and fidelity complete.
+- 2026-07-07T00:44Z: WM tier 4 training and fidelity completed successfully. Fidelity wrote
+  tier 4 rows to `results/wm_fidelity.parquet`: horizon 1 PSNR `31.981`, SSIM `0.990`,
+  LPIPS `0.030`; horizon 8 PSNR `29.318`, SSIM `0.977`, LPIPS `0.040`; horizon 16 PSNR
+  `27.487`, SSIM `0.965`, LPIPS `0.045`; horizon 32 PSNR `24.998`, SSIM `0.946`,
+  LPIPS `0.056`; mean divergence step `23.875`.

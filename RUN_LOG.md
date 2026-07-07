@@ -105,6 +105,15 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   (`sim_eval_smolvla_libero_step_005000`) for `libero_spatial/train` with task IDs
   `0 2 4 6 8 1 3 5`. Acceptance remains pending until the full 30-task rerun finishes and
   `python -m dreamgrasp.eval.acceptance sim --split train` passes.
+- 2026-07-07T18:33Z: Clean T2.2 rerun completed all 12,000 rollouts and wrote 12,000 rows
+  to `results/sim_success.parquet` (24 train tasks + 6 held-out tasks, 8 checkpoints, 50
+  rollouts per checkpoint/task). The final acceptance command failed the train-split spread
+  gate: `step_010000=0.0275`, `step_005000=0.0283`, `step_020000=0.1433`,
+  `step_030000=0.1758`, `step_015000=0.1883`, `step_035000=0.1975`,
+  `step_040000=0.1975`, `step_025000=0.2083`; best `0.2083`, worst `0.0275`, spread
+  `0.1808` (< required `0.2500`). Tmux exited with `EXIT_STATUS=1` due to the failed
+  acceptance check, not a runtime crash. Per user instruction, stop here and report before
+  proposing or launching any next step.
 
 ### T2.3 World-Model Family
 

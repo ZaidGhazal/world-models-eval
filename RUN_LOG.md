@@ -114,6 +114,29 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   `0.1808` (< required `0.2500`). Tmux exited with `EXIT_STATUS=1` due to the failed
   acceptance check, not a runtime crash. Per user instruction, stop here and report before
   proposing or launching any next step.
+- 2026-07-08: T2.2 scope decision approved by the user, acting on the DIAGNOSTIC-2 per-suite
+  analysis of the completed 12,000-row `results/sim_success.parquet`: the T2.2 gate for
+  proceeding to T2.4/T2.5/T2.6 is redefined to the `libero_spatial` subset of the train
+  split, where worst-to-best checkpoint spread is `27.00` points (clears the 25-point bar).
+  `libero_object` (`23.5`) and `libero_goal` (`16.75`) did not reach usable spread within
+  this run's 40k-step training budget, even after removing their hardest tasks. No rerun is
+  needed or permitted to act on this decision; the existing parquet is the input, and
+  object/goal rows stay in the parquet and in the final report as non-gating results.
+  Implemented in commit `5254820a88a6778375ede8e525411bc649bf494e`: `acceptance.py` gains a
+  `--suite` filter that prints full-scope (all-suite) numbers as non-gating before gating on
+  the suite subset, with a unit test (`tests/test_acceptance.py`), and RUNBOOK.md/
+  LIMITATIONS.md now document the scope. New acceptance command:
+  `python -m dreamgrasp.eval.acceptance sim --split train --suite libero_spatial`.
+  GPU-hours consumed: 0.0 (documentation/configuration change only; verified with pytest,
+  ruff, mypy, and a synthetic-parquet CLI run on the Mac).
+- 2026-07-08 open items from this session, blocked on GPU-host access (`umd-004061` SSH is
+  password-only and this session could not authenticate non-interactively): (1) the free
+  video inspection of failed `libero_object`/`libero_goal` rollouts — the saved
+  `results/videos/*.mp4` exist only on the GPU host and sim-eval does not upload videos to
+  W&B — so the failure-mode sentence in LIMITATIONS.md item 6 is marked TODO; (2) the
+  authoritative acceptance re-run against the real 12,000-row parquet, which must be executed
+  on the GPU host after pulling `main`. Both take minutes and 0 GPU-hours. Do not start T2.4
+  until the acceptance command passes on the GPU host and the video-inspection sentence lands.
 
 ### T2.3 World-Model Family
 

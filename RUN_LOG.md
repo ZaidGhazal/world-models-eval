@@ -161,6 +161,27 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   Findings recorded in `LIMITATIONS.md` item 6. T2.2 is now accepted under the
   libero_spatial scope; stopping here for approval before starting T2.4.
 
+### T2.4 Success Classifier
+
+- 2026-07-08T04:45Z (approx): Pre-launch items resolved. (1) Branch `t2.2-spatial-scope`
+  was fast-forwarded into `main` (`52cf9b6..0e59a58`, no merge commit needed since the
+  branch was strictly ahead) and the GPU checkout switched back to `main` at `0e59a58`;
+  the remote feature branch was left in place. (2) T2.4 training-data scope confirmed as
+  all three suites (full 12,000-video `results/sim_success.parquet` manifest, train and
+  held-out splits): the classifier is a success judge, not the ranked policy, so its
+  training scope need not match T2.6's libero_spatial ranking scope, and the diverse
+  examples cost nothing. `success_classifier.build_manifest` already uses every parquet
+  row with an existing video (no suite filter), so no code change was needed; RUNBOOK.md
+  T2.4 now states the scope explicitly (commit `6bcee82`).
+- 2026-07-08T04:48Z: Launched real T2.4 in tmux session `t24_classifier` on `umd-004061`
+  from `main` at `6bcee82`, GPU idle beforehand (155 MiB used). Command per RUNBOOK:
+  `python -m dreamgrasp.eval.success_classifier --videos-dir results/videos --labels
+  results/sim_success.parquet --epochs 20 --out checkpoints/classifier`, logging to
+  `logs/t2.4_classifier.log`. W&B run: `nri5o6vs` (`success_classifier`). Startup check:
+  session alive, GPU at 901 MiB / 15% utilization during the frozen-SigLIP pre-embedding
+  pass over 12,000 videos. Acceptance pending: held-out accuracy >= 90% (hard failure in
+  the script below that bar), confusion matrix under `docs/`.
+
 ### T2.3 World-Model Family
 
 - 2026-07-04T15:53Z: Started WM tier 1 concurrently with T2.2 in tmux session

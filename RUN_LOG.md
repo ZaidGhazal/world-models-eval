@@ -242,3 +242,14 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   LPIPS `0.030`; horizon 8 PSNR `29.318`, SSIM `0.977`, LPIPS `0.040`; horizon 16 PSNR
   `27.487`, SSIM `0.965`, LPIPS `0.045`; horizon 32 PSNR `24.998`, SSIM `0.946`,
   LPIPS `0.056`; mean divergence step `23.875`.
+- 2026-07-08T05:03Z: Started WM tier 5 (user-approved) concurrently with T2.4 in tmux
+  session `t23_wm_tier5`. Tier 5 had never been started before this — tiers 3 and 4
+  completed during the T2.2 rerun period, but no tier 5 launch existed until now. Command
+  sequence mirrors tiers 2-4: `scripts/train_wm_tier.sh 5`, then tier 5 fidelity only if
+  training exits successfully, logging to `logs/t2.3_wm_tier5.log`. W&B run: `a6i1aadp`
+  (`wm_tier5`). Startup check: tier 5 loaded 122,706 clips (clip_len 9), VAE step 0 loss
+  `0.05535`; T2.4 and T2.3 both alive; GPU memory `10935 MiB / 24570 MiB`, utilization
+  97%, temperature `72C`. No OOM. Because tier 5 adds an LPIPS loss term on top of latent
+  MSE, do not extrapolate runtime from tiers 3-4 alone; a ~1h throughput check-in is
+  scheduled to produce a measured completion estimate. T2.3 tier 5 acceptance remains
+  pending until training and fidelity complete.

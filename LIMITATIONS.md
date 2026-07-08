@@ -22,7 +22,13 @@
    supportable on those suites and they are excluded from the gating analysis. Their results
    remain in `results/sim_success.parquet` and are reported in full. This is a property of this
    specific SmolVLA fine-tuning run and its training budget, not a claim about SmolVLA or the
-   LIBERO object/goal suites in general.
-   <!-- TODO(T2.2 scope decision): add one sentence characterizing what failed object/goal
-   rollouts actually look like, from inspection of saved rollout videos on the GPU host. -->
+   LIBERO object/goal suites in general. Inspection of sampled failure videos (18 rollouts
+   spanning 6 tasks and the 5k/20k/40k checkpoints) shows the dominant modes are grasp
+   failure, not scene misunderstanding: early checkpoints sweep the arm over the workspace
+   without contacting the task object, while mid/late checkpoints approach the correct region
+   but hover above the object, close the gripper on nothing, and then stall or proceed to the
+   goal location (basket, stove, drawer) empty-handed; occasionally the correct object is
+   engaged but displaced past the target (e.g. a plate dragged off the counter). All sampled
+   failures ran the full 400 steps with the scene largely undisturbed — no dropped-object or
+   catastrophic cases were observed.
 

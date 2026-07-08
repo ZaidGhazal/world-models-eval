@@ -137,6 +137,29 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   authoritative acceptance re-run against the real 12,000-row parquet, which must be executed
   on the GPU host after pulling `main`. Both take minutes and 0 GPU-hours. Do not start T2.4
   until the acceptance command passes on the GPU host and the video-inspection sentence lands.
+- 2026-07-08 (later): user provided SSH access to `umd-004061`; both open items are resolved.
+  Commits were synced to the GPU via branch `t2.2-spatial-scope` (direct push to `main` was
+  blocked by session policy; the branch should be merged/fast-forwarded to `main` by the
+  user). GPU checkout at `db6d014`. GPU-hours consumed: 0.0 (CPU-only parquet read and
+  video decoding of existing artifacts).
+  (1) Authoritative acceptance PASS on the real 12,000-row `results/sim_success.parquet`:
+  `python -m dreamgrasp.eval.acceptance sim --split train --suite libero_spatial` exited 0.
+  Gating subset (libero_spatial train, 3,200 rows): `step_010000=0.0200`,
+  `step_005000=0.0475`, `step_020000=0.1575`, `step_015000=0.1975`, `step_040000=0.2325`,
+  `step_030000=0.2450`, `step_035000=0.2525`, `step_025000=0.2900`; best `0.290`, spread
+  `0.270` (>= `0.250`). Full-scope non-gating numbers printed by the same command (9,600
+  train rows): best `0.208`, spread `0.181`, matching the 2026-07-07 failure entry.
+  (2) Video inspection of 18 failed `libero_object`/`libero_goal` train rollouts (6 tasks x
+  checkpoints 5k/20k/40k, sampled from the parquet, copied from the GPU and reviewed as
+  12-frame contact sheets): early checkpoints sweep the arm over the workspace without
+  contacting the task object; mid/late checkpoints reach the correct region but hover above
+  the object, close the gripper on nothing, and then stall or move to the goal location
+  (basket/stove/drawer) empty-handed; one case engaged the correct object but dragged it
+  past the target (plate pulled off the counter, `push_the_plate` at 20k); one near-miss
+  carried an object to the basket rim without ending inside (`alphabet_soup` at 20k). All
+  sampled failures ran the full 400 steps; no dropped-object or scene-destroying behavior.
+  Findings recorded in `LIMITATIONS.md` item 6. T2.2 is now accepted under the
+  libero_spatial scope; stopping here for approval before starting T2.4.
 
 ### T2.3 World-Model Family
 

@@ -253,3 +253,39 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   MSE, do not extrapolate runtime from tiers 3-4 alone; a ~1h throughput check-in is
   scheduled to produce a measured completion estimate. T2.3 tier 5 acceptance remains
   pending until training and fidelity complete.
+- 2026-07-08T06:04Z-13:00Z (approx): the Mac lost network reach to `umd-004061` (SSH
+  timeout, 100% packet loss) so the ~1h tier 5 check-in could not run on schedule. The
+  outage did not affect the jobs: host uptime shows no reboot, and both jobs ran to their
+  natural ends inside tmux during the window (outcomes below). The tmux server exiting was
+  normal behavior — command-spawned sessions close when their command finishes.
+- 2026-07-08T06:33:03Z: WM tier 5 FAILED with CUDA OOM, `EXIT_STATUS=1`. The VAE stage
+  completed cleanly (20,000 steps, loss `0.05109` -> `0.00046`, `tier_5/vae.pt` saved),
+  then the dynamics stage OOM'd before logging a single step: 23.32 GiB in use on the
+  23.65 GiB card during an attention projection. Root cause: tier 5 doubles context
+  (8 vs tier 4's 4), and its LPIPS loss adds a second full dynamics forward, a VAE
+  decode to 128px, and a VGG pass per step — batch 16 cannot fit. GPU-hours consumed by
+  the failed attempt: ~1.5 (the VAE stage is salvageable and was reused; see relaunch).
+  Failed-run log archived as `logs/t2.3_wm_tier5_oom_20260708T0633.log`.
+- 2026-07-08T13:06Z: Relaunched tier 5 in tmux `t23_wm_tier5` from `main` at `1029df8`,
+  which fixes the OOM without changing the tier design: `batch_size` 8 with new
+  `grad_accum: 2` (effective batch, step count, and total samples identical to tiers 1-4)
+  and new `resume_vae: true` (reuses the completed stage-1 `vae.pt` instead of re-spending
+  ~1.4 GPU-hours retraining it). Both code paths were smoke-tested on the Mac with the tiny
+  config before relaunch (VAE resume message, dyn loss `3.20` -> `0.10` over 25 accum
+  steps with LPIPS active). Startup check: VAE resumed, dyn step 0 loss `6.24172`
+  (`latent_mse` 6.351, `state_mse` 1.849, `lpips` 0.672), GPU `15469 MiB / 24570 MiB`
+  at 100% utilization, 60C — about 9 GiB headroom vs the OOM run. W&B run: `wm_tier5`
+  (new run id from this relaunch). Throughput check-in rescheduled; measured ETA to follow.
+
+### T2.4 Success Classifier (outcome)
+
+- 2026-07-08T05:11:23Z: T2.4 COMPLETED with `EXIT_STATUS=0` in ~23 minutes (~0.4
+  GPU-hours; the frozen-SigLIP design pre-embeds all videos once, so the 20 epochs train
+  only the small head). Trained on the full three-suite manifest: 9,600 train / 2,400
+  held-out videos from `results/sim_success.parquet`. W&B run `nri5o6vs`.
+- T2.4 acceptance PASS: held-out accuracy `0.9817` (>= 0.90 bar). Confusion matrix
+  (n=2,400): tn 2092, fp 25, fn 19, tp 264 — precision `0.913`, recall `0.933` on the
+  success class. Artifacts: `checkpoints/classifier/head.pt`,
+  `docs/classifier_confusion_matrix.csv`, `docs/classifier_metrics.json`. Note the 0.9817
+  accuracy upper-bounds downstream dream-success claims per LIMITATIONS.md item 3, and the
+  val split is a random video split (all suites), not a held-out-task split.

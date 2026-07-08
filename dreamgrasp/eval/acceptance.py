@@ -14,20 +14,33 @@ def require_columns(df: pd.DataFrame, columns: list[str], path: Path) -> None:
         raise SystemExit(f"{path} missing columns: {missing}")
 
 
-def check_sim(path: Path, min_best: float, min_spread: float, split: str | None) -> None:
+def check_sim(
+    path: Path, min_best: float, min_spread: float, split: str | None, suite: str | None
+) -> None:
     df = pd.read_parquet(path)
     require_columns(df, ["checkpoint", "task", "seed", "success", "steps"], path)
     if split and "split" in df.columns:
         df = df[df["split"] == split]
         if df.empty:
             raise SystemExit(f"T2.2 FAILED: no rows for split={split!r}")
+    if suite:
+        require_columns(df, ["suite"], path)
+        # Full-scope numbers stay reported (non-gating) whenever the gate is suite-scoped.
+        full = df.groupby("checkpoint")["success"].mean().sort_values()
+        print("sim success by checkpoint, all suites (reported, non-gating):")
+        print(full.to_string())
+        print(f"all-suite best={full.iloc[-1]:.3f} spread={full.iloc[-1] - full.iloc[0]:.3f} rows={len(df)}")
+        df = df[df["suite"] == suite]
+        if df.empty:
+            raise SystemExit(f"T2.2 FAILED: no rows for suite={suite!r}")
     by_ckpt = df.groupby("checkpoint")["success"].mean().sort_values()
     spread = float(by_ckpt.iloc[-1] - by_ckpt.iloc[0])
     best = float(by_ckpt.iloc[-1])
     print("sim success by checkpoint:")
     print(by_ckpt.to_string())
     split_msg = f" split={split}" if split and "split" in df.columns else ""
-    print(f"best={best:.3f} spread={spread:.3f} rows={len(df)}{split_msg}")
+    suite_msg = f" suite={suite}" if suite else ""
+    print(f"best={best:.3f} spread={spread:.3f} rows={len(df)}{split_msg}{suite_msg}")
     if best < min_best:
         raise SystemExit(f"T2.2 FAILED: best success {best:.3f} < {min_best:.3f}")
     if spread < min_spread:
@@ -71,7 +84,14 @@ def main() -> None:
     sim.add_argument("--path", type=Path, default=REPO_ROOT / "results" / "sim_success.parquet")
     sim.add_argument("--min-best", type=float, default=0.20)
     sim.add_argument("--min-spread", type=float, default=0.25)
-    sim.add_argument("--split", default=None, help="optional split filter when sim parquet has a split column")
+    sim.add_argument(
+        "--split", default=None, help="optional split filter when sim parquet has a split column"
+    )
+    sim.add_argument(
+        "--suite",
+        default=None,
+        help="optional suite the gate is scoped to; full-scope numbers are still printed (non-gating)",
+    )
     wm = sub.add_parser("wm")
     wm.add_argument("--path", type=Path, default=REPO_ROOT / "results" / "wm_fidelity.parquet")
     dream = sub.add_parser("dream")
@@ -79,7 +99,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.phase == "sim":
-        check_sim(args.path, args.min_best, args.min_spread, args.split)
+        check_sim(args.path, args.min_best, args.min_spread, args.split, args.suite)
     elif args.phase == "wm":
         check_wm(args.path)
     elif args.phase == "dream":

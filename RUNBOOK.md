@@ -134,8 +134,13 @@ python -m dreamgrasp.eval.acceptance wm
 
 ## T2.4 Success Classifier
 
-Per the 2026-07-08 T2.2 scope decision, T2.4 through T2.6 operate on the `libero_spatial`
-subset of the simulator results (train and held-out `libero_spatial` tasks).
+Training-data scope (explicit, per the 2026-07-08 decisions): the classifier trains on
+labeled rollout videos from **all three suites** — the full `results/sim_success.parquet`
+manifest, train and held-out splits alike. Diverse success/failure examples improve the
+judge's robustness, the videos already exist at zero additional cost, and the classifier's
+training scope has no requirement to match the ranking scope. Only the ranking/calibration
+analysis of T2.5/T2.6 is scoped to `libero_spatial`. The command below implements this:
+`build_manifest` uses every parquet row whose video exists, with no suite filter.
 
 ```bash
 python -m dreamgrasp.eval.success_classifier \

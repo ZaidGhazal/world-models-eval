@@ -276,6 +276,15 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   (`latent_mse` 6.351, `state_mse` 1.849, `lpips` 0.672), GPU `15469 MiB / 24570 MiB`
   at 100% utilization, 60C — about 9 GiB headroom vs the OOM run. W&B run: `wm_tier5`
   (new run id from this relaunch). Throughput check-in rescheduled; measured ETA to follow.
+- 2026-07-08T14:08Z tier 5 throughput check-in (measured, not extrapolated): dyn step
+  1,400 reached 57 minutes after launch => ~25.5 optimizer steps/min, ~4.5-5x slower per
+  step than tier 4's dynamics stage. The slowdown matches the design deltas: 2 grad-accum
+  micro-batches per step, each with two dynamics forwards (loss + LPIPS branch) at doubled
+  context, plus VAE decode and VGG. Projected dyn-stage wall clock: ~39 h, ETA
+  ~2026-07-10T04:00Z (+ ~10 min fidelity). Memory steady at `15469 MiB`, 99% utilization,
+  78C. Loss healthy: `6.24` at step 0 -> `0.0258` at step 1,400 (`lpips` part 0.672 ->
+  0.079). Cumulative T2.3 family wall clock including this projection is ~65 h, inside the
+  RUNBOOK 50-80 h envelope, so the run continues as approved. Next report at completion.
 
 ### T2.4 Success Classifier (outcome)
 

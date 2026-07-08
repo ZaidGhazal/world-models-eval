@@ -17,7 +17,9 @@ lpips_weight: 0.1
 
 vae_steps: 20000
 dyn_steps: 60000
-batch_size: 16
+batch_size: 8
+grad_accum: 2   # effective batch 16; batch 8 fits the LPIPS dyn stage in 24 GB
+resume_vae: true
 lr: 3.0e-4
 warmup_steps: 500
 grad_clip: 1.0

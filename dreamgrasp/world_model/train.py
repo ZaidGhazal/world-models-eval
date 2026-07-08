@@ -48,27 +48,33 @@ def resize(frames: torch.Tensor, size: int) -> torch.Tensor:
 def train_stage(model, loader, steps, cfg, device, loss_fn, tag, run):
     params = [p for p in model.parameters() if p.requires_grad]
     optim = torch.optim.AdamW(params, lr=cfg.lr, weight_decay=1e-5)
+    # grad_accum micro-batches per optimizer step keeps the effective batch (and total
+    # samples seen over `steps`) identical when batch_size is cut to fit VRAM.
+    accum = int(cfg.get("grad_accum", 1))
     it = iter(loader)
     losses = []
     for step in range(steps):
         for g in optim.param_groups:
             g["lr"] = cosine_lr(step, steps, cfg.lr, cfg.warmup_steps)
-        try:
-            batch = next(it)
-        except StopIteration:
-            it = iter(loader)
-            batch = next(it)
-        batch = {k: v.to(device) for k, v in batch.items()}
-        batch["frames"] = resize(batch["frames"], cfg.image_size)
-        loss, parts = loss_fn(batch)
         optim.zero_grad(set_to_none=True)
-        loss.backward()
+        loss_val = 0.0
+        for _ in range(accum):
+            try:
+                batch = next(it)
+            except StopIteration:
+                it = iter(loader)
+                batch = next(it)
+            batch = {k: v.to(device) for k, v in batch.items()}
+            batch["frames"] = resize(batch["frames"], cfg.image_size)
+            loss, parts = loss_fn(batch)
+            (loss / accum).backward()
+            loss_val += loss.item() / accum
         torch.nn.utils.clip_grad_norm_(params, cfg.grad_clip)
         optim.step()
-        losses.append(loss.item())
+        losses.append(loss_val)
         if step % cfg.log_every == 0 or step == steps - 1:
-            print(f"[{tag}] step {step} loss {loss.item():.5f} {parts}", flush=True)
-        run.log({f"{tag}/loss": loss.item(), **{f"{tag}/{k}": v for k, v in parts.items()}})
+            print(f"[{tag}] step {step} loss {loss_val:.5f} {parts}", flush=True)
+        run.log({f"{tag}/loss": loss_val, **{f"{tag}/{k}": v for k, v in parts.items()}})
     first = sum(losses[:10]) / min(10, len(losses))
     last = sum(losses[-10:]) / min(10, len(losses))
     print(f"[{tag}] mean(loss[:10])={first:.5f} mean(loss[-10:])={last:.5f}")
@@ -110,8 +116,16 @@ def main() -> None:
         parts.pop("recon")
         return loss, parts
 
-    train_stage(vae, loader, cfg.vae_steps, cfg, device, vae_loss, "vae", run)
-    torch.save(vae.state_dict(), out_dir / "vae.pt")
+    vae_path = out_dir / "vae.pt"
+    if OmegaConf.select(cfg, "resume_vae") and vae_path.exists():
+        # Reuse a VAE already trained to completion by a prior run of the same config —
+        # stage 1 is deterministic given the config, so retraining it after a stage-2
+        # crash only re-spends GPU-hours.
+        vae.load_state_dict(torch.load(vae_path, map_location=device))
+        print(f"resumed VAE from {vae_path}")
+    else:
+        train_stage(vae, loader, cfg.vae_steps, cfg, device, vae_loss, "vae", run)
+        torch.save(vae.state_dict(), vae_path)
 
     # Stage 2: freeze VAE, train dynamics on latent clips.
     vae.eval()

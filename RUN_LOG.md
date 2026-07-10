@@ -305,6 +305,34 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   with how fidelity seeds rollout context, the LPIPS-weighted objective trading latent
   accuracy for perceptual sharpness, or the tier design genuinely underperforming at this
   budget. Holding before T2.5 and reporting to the user for a decision.
+- 2026-07-10T18:20Z (approx): User-approved diagnostic of the tier 5 divergence anomaly,
+  inference-only, no training. (a) Ruled out: read `fidelity.py`/`dynamics.py` end to end —
+  clip_len, rollout context window, and action indexing are all parameterized by
+  `cfg.context`, not hardcoded to 4, so there is no off-by-one specific to context=8; the
+  divergence threshold (4x the model's own horizon-1 MSE) is self-referential per
+  checkpoint, not a fixed value that would unfairly penalize a longer context. Confirmed
+  empirically with a standalone re-run (`/tmp/diag_tier5.py` on the GPU, 8 val clips per
+  tier, independent of the original fidelity run): tier 5's raw MSE is already ~26% above
+  tier 4's at step 1 (`0.000757` vs `0.000601`) and grows ~3.6x its own step-1 value by
+  step 8 vs tier 4's ~1.8x — a real, reproducible growth-rate difference, not an artifact
+  of how the threshold or context window is computed.
+  (b) vs (c): saved side-by-side ground-truth-vs-dreamed frames (steps 1/4/8/16/24/32) for
+  one clip per tier. Tier 4's dreamed rollout stays structurally coherent through step 32
+  (soft but recognizable scene). Tier 5's dreamed rollout matches ground truth at steps 1
+  and 4, visibly degrades by step 8, and by steps 16-32 the robot arm and tabletop objects
+  disintegrate into fragmented color blobs rather than staying sharp-but-shifted. This is
+  genuine incoherent collapse, not the sharper-but-wrong signature LPIPS-only overfitting
+  would produce. Conclusion: (c) is supported by the evidence — tier 5 has a real
+  autoregressive-rollout quality collapse, not a fidelity-harness or metric artifact. Likely
+  mechanism (not yet tested): the dynamics stage trains with teacher-forced single-step
+  targets only (`loss()` always conditions on true latents), so exposure bias at rollout
+  time is a standing risk for every tier; tier 5's longer context (8 vs 4) gives the model
+  more of its own accumulating latent error to condition on per step, which could compound
+  faster, and the added LPIPS forward pass (a second, non-teacher-forced dynamics call) may
+  be pulling the shared dynamics weights toward one-step perceptual sharpness at the
+  expense of multi-step latent stability. No fix or retrain proposed yet; holding for a
+  decision per instructions. Diagnostic script and output images kept on the Mac scratchpad,
+  not committed (inference-only debug artifacts, not project outputs).
 
 ### T2.4 Success Classifier (outcome)
 

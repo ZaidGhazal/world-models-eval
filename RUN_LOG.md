@@ -285,6 +285,26 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   78C. Loss healthy: `6.24` at step 0 -> `0.0258` at step 1,400 (`lpips` part 0.672 ->
   0.079). Cumulative T2.3 family wall clock including this projection is ~65 h, inside the
   RUNBOOK 50-80 h envelope, so the run continues as approved. Next report at completion.
+- 2026-07-10T05:03:24Z: WM tier 5 training and fidelity COMPLETED, `EXIT_STATUS=0`,
+  `done in 143492s` (~39.9 h, matching the measured-throughput ETA to within 2 minutes).
+  Dynamics loss mean first10 `3.75667` -> mean last10 `0.00902` (the `latent_mse`
+  component ~`0.0036`, comparable to tier 4's `0.00338`; the remainder is the weighted
+  LPIPS term). Fidelity rows written: horizon 1 PSNR `31.488`, SSIM `0.989`, LPIPS
+  `0.028`; horizon 8 PSNR `26.442`, SSIM `0.964`, LPIPS `0.077`; horizon 16 PSNR
+  `23.838`, SSIM `0.935`, LPIPS `0.121`; horizon 32 PSNR `21.185`, SSIM `0.883`, LPIPS
+  `0.184`; mean divergence step `12.9375`.
+- 2026-07-10T14:35Z: T2.3 family acceptance command `python -m dreamgrasp.eval.acceptance
+  wm` PASSED (exit 0; all horizons present for tiers 1-5, and its hard WM-2-vs-WM-4 gate
+  holds: `20.94` < `23.88`). HOWEVER, flagging a monotonicity concern the command does not
+  gate on: tier 5 is worse than tier 4 on every fidelity metric at every horizon (e.g.
+  horizon 32 PSNR `21.19` vs `25.00`) and its mean divergence step (`12.94`) is the worst
+  of all five tiers — vs tier 4's `23.88` and even tier 1's `19.81`. This sits against the
+  RUNBOOK criteria "fidelity is monotonic-ish across tiers" and "WM-5 gives coherent 30-50
+  step rollouts": rollouts diverge around step 13 on average. Candidate explanations to
+  investigate before relying on tier 5 in T2.5/T2.6: the context-8 conditioning interacting
+  with how fidelity seeds rollout context, the LPIPS-weighted objective trading latent
+  accuracy for perceptual sharpness, or the tier design genuinely underperforming at this
+  budget. Holding before T2.5 and reporting to the user for a decision.
 
 ### T2.4 Success Classifier (outcome)
 

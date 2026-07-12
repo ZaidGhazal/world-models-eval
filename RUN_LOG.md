@@ -333,6 +333,21 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   expense of multi-step latent stability. No fix or retrain proposed yet; holding for a
   decision per instructions. Diagnostic script and output images kept on the Mac scratchpad,
   not committed (inference-only debug artifacts, not project outputs).
+- 2026-07-10T19:05Z (approx): **User decision on tier 5 (NOTE FOR REPORT DRAFT):** proceed
+  to T2.5 with all five tiers included as-is. Tier 5's degraded fidelity is treated as a
+  real, well-diagnosed finding, not a bug to fix or a reason to exclude the tier — no
+  retrain. Report language: tier 5 shows genuine autoregressive quality collapse by rollout
+  steps 16-32 despite more data and longer context than tier 4, most likely linked to the
+  LPIPS branch's non-teacher-forced gradient pulling shared dynamics weights toward
+  one-step perceptual sharpness at the cost of multi-step latent stability (hypothesis,
+  not confirmed — see the 2026-07-10T18:20Z diagnostic entry above for the ruled-out/
+  supported evidence). The diagnostic tool used to produce the ground-truth-vs-dreamed
+  comparison frames was generalized and committed as `scripts/compare_wm_rollouts.py`
+  (from the earlier one-off `/tmp/diag_tier5.py`), so the tier 4 vs tier 5 comparison is
+  reproducible on demand, e.g. for a report figure, via:
+  `python scripts/compare_wm_rollouts.py --checkpoint checkpoints/world_model/tier_5
+  --n-clips 8 --out report/figures/tier5_collapse.png`. The two PNGs generated during the
+  diagnostic itself were not committed (regenerable output, not source).
 
 ### T2.4 Success Classifier (outcome)
 

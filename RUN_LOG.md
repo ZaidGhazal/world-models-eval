@@ -349,6 +349,21 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   --n-clips 8 --out report/figures/tier5_collapse.png`. The two PNGs generated during the
   diagnostic itself were not committed (regenerable output, not source).
 
+- 2026-07-12T17:17Z: Launched T2.5 in tmux session `t25_dream` on `umd-004061` from `main`
+  at `5d21ec7`, per user approval to proceed with all five WM tiers as-is (tier 5 included
+  despite its diagnosed collapse — see the 2026-07-10 decision note above). Command mirrors
+  RUNBOOK's nested `tier x checkpoint` loop, now with `--suite libero_spatial` on every
+  invocation (new flag, commit `5d21ec7`) so all 2,000 dreams (5 tiers x 8 checkpoints x 50)
+  land on tasks that have a matching libero_spatial ground-truth row in
+  `results/sim_success.parquet` for T2.6, instead of ~2/3 being dropped at that merge. Logs
+  to `logs/t2.5_dream_eval.log`; the acceptance command runs automatically at the end.
+  Startup check: first W&B run `87z48btf` (`dream_eval_tier_1_smolvla_libero_step_005000`),
+  sampled tasks are libero_spatial as expected (e.g. "pick up the black bowl ... place it
+  on the plate"), classifier scoring live (`dream_success_prob` populated per row), GPU
+  `1819 MiB / 24570 MiB` at 34% utilization, 39C. T2.5 acceptance pending until all 40
+  (tier, checkpoint) combinations finish and `python -m dreamgrasp.eval.acceptance dream`
+  passes.
+
 ### T2.4 Success Classifier (outcome)
 
 - 2026-07-08T05:11:23Z: T2.4 COMPLETED with `EXIT_STATUS=0` in ~23 minutes (~0.4

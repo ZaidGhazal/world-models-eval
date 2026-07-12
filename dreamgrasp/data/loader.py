@@ -16,9 +16,11 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SPLITS_PATH = REPO_ROOT / "configs" / "splits.json"
 
 
-def episodes_for_split(split: str, splits_path: Path = SPLITS_PATH) -> list[int]:
+def episodes_for_split(split: str, splits_path: Path = SPLITS_PATH, suite: str | None = None) -> list[int]:
     plan = json.loads(Path(splits_path).read_text())
-    return [r["episode_index"] for r in plan if r["split"] == split]
+    return [
+        r["episode_index"] for r in plan if r["split"] == split and (suite is None or r["suite"] == suite)
+    ]
 
 
 def make_policy_dataset(

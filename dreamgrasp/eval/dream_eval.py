@@ -67,6 +67,7 @@ def main() -> None:
     parser.add_argument("--n-dreams", type=int, default=2)
     parser.add_argument("--horizon", type=int, default=200)
     parser.add_argument("--split", default="val")
+    parser.add_argument("--suite", default=None, help="restrict episode sampling to one LIBERO suite")
     parser.add_argument("--episodes", type=int, default=None, help="cap episodes (tiny runs)")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--classifier", type=Path, default=None, help="success classifier checkpoint")
@@ -94,12 +95,13 @@ def main() -> None:
             "n_dreams": args.n_dreams,
             "horizon": args.horizon,
             "split": args.split,
+            "suite": args.suite,
             "seed": args.seed,
             "classifier": str(args.classifier) if args.classifier else None,
         },
     )
 
-    episodes = episodes_for_split(args.split)
+    episodes = episodes_for_split(args.split, suite=args.suite)
     if args.episodes:
         episodes = episodes[: args.episodes]
     ds = ClipDataset(REPO_ROOT / cfg.dataset_root, clip_len=cfg.context + 1, episodes=episodes)

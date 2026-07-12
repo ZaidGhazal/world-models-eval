@@ -163,6 +163,11 @@ Acceptance:
 
 ## T2.5 Dream Rollouts
 
+Per the 2026-07-08 scope decision, dream sampling is restricted to `libero_spatial` (`--suite`)
+so every dreamed episode has a matching libero_spatial ground-truth row in
+`results/sim_success.parquet` for T2.6's correlation — otherwise most of the dream budget
+would land on tasks T2.6 can't use and get silently dropped at the merge.
+
 ```bash
 for tier in 1 2 3 4 5; do
   for ckpt in checkpoints/policy/smolvla_libero/step_*; do
@@ -170,6 +175,7 @@ for tier in 1 2 3 4 5; do
       --policy "$ckpt" \
       --world-model "checkpoints/world_model/tier_${tier}" \
       --wm-tier "tier_${tier}" \
+      --suite libero_spatial \
       --n-dreams 50 \
       --horizon 200 \
       --classifier checkpoints/classifier

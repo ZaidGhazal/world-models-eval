@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from dreamgrasp.data.loader import episodes_for_split
+
 SPLITS_PATH = Path(__file__).resolve().parents[1] / "configs" / "splits.json"
 
 pytestmark = pytest.mark.skipif(not SPLITS_PATH.exists(), reason="splits.json not built yet")
@@ -50,3 +52,13 @@ def test_split_fractions_per_task():
 def test_episode_indices_contiguous():
     plan = _plan()
     assert [r["episode_index"] for r in plan] == list(range(len(plan)))
+
+
+def test_episodes_for_split_suite_filter():
+    plan = _plan()
+    all_val = set(episodes_for_split("val"))
+    spatial_val = set(episodes_for_split("val", suite="libero_spatial"))
+    assert spatial_val <= all_val
+    expected = {r["episode_index"] for r in plan if r["split"] == "val" and r["suite"] == "libero_spatial"}
+    assert spatial_val == expected
+    assert spatial_val, "expected at least one libero_spatial val episode"

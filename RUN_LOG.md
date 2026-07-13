@@ -376,6 +376,41 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   state head) that fidelity's teacher-forced-rollout metric doesn't capture. Not
   investigated further per scope (T2.5 launch/monitor only); holding before T2.6 per
   instructions.
+- 2026-07-13T (approx, follow-up): user asked whether the tier_4 anomaly could be a cheap
+  mapping bug (fix = rerun tier_4 only, no need to touch tiers 1/2/3/5). Investigated,
+  inference-only, no training:
+  (1) Task labels for tier_4 dreams are correctly `libero_spatial` phrasing (e.g. "pick up
+  the black bowl ... place it on the plate") — the `--suite` filter is working.
+  (2) The `--world-model`/`--wm-tier` pair is built from a single shared shell loop
+  variable in the T2.5 launch command, so a tier/checkpoint swap is not structurally
+  possible.
+  (3) Every combo shares `seed_everything(0)` + `rng = np.random.default_rng(0)`, so all 40
+  combos draw the identical seed-clip/task sequence — dream index N is directly comparable
+  across tiers. Re-ran `step_005000` for tier_3 and tier_4 standalone
+  (`--n-dreams 2 --save-videos`): reproduced the exact original probs deterministically
+  (tier_3 dream0 `0.0951`, tier_4 dream0 `1.40e-8`).
+  (4) Independently rescored the saved `.mp4` files from disk with a fresh standalone
+  script (bypassing `dream_eval.py`'s internal scoring call path entirely): tier_3
+  `0.385`, tier_4 `0.0086` (small numeric drift from mp4 compression, same qualitative
+  gap). Rules out a scoring-call-path bug.
+  (5) Visual inspection (12-frame contact sheets, steps 0-199) shows tier_4's dream is
+  *not* visually broken — arm motion stays sharp and geometrically coherent, arguably
+  cleaner than tier_3's, which shows a persistent hatched/woven texture artifact bleeding
+  across the scene from early in the rollout.
+  **Conclusion: not a mapping bug — no rerun warranted.** The anomaly is real and
+  reproducible, not corrupted data. Two open, undistinguished hypotheses for the report:
+  (a) the classifier (trained only on real-simulator frames, never on WM-dreamed frames of
+  any tier) has a domain gap that happens to hit tier_4's specific rendering style harder
+  than tier_3's, despite tier_4 being closer to ground truth on every fidelity metric; or
+  (b) tier_4 is the more *honest* tier under closed-loop policy-driven dreaming (as opposed
+  to fidelity.py's teacher-forced rollout) — tier_3's extra hallucination may fabricate a
+  completion-looking final frame for a weak policy that never actually grasped anything,
+  while tier_4 faithfully renders the failure. Distinguishing these is model-behavior
+  research, out of scope for this bug check; flagging both for the T2.6 write-up and for
+  LIMITATIONS.md's existing classifier-bound caveat (item 3). Diagnostic dream videos
+  (`tier_3/4__smolvla_libero_step_005000__seed{0,1}.mp4`) are on the GPU host under
+  `results/dream_videos/` (already part of the real T2.5 output tree, not scratch) and on
+  the Mac scratchpad; not otherwise committed. Still holding before T2.6.
   Startup check: first W&B run `87z48btf` (`dream_eval_tier_1_smolvla_libero_step_005000`),
   sampled tasks are libero_spatial as expected (e.g. "pick up the black bowl ... place it
   on the plate"), classifier scoring live (`dream_success_prob` populated per row), GPU

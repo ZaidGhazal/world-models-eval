@@ -357,6 +357,25 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   land on tasks that have a matching libero_spatial ground-truth row in
   `results/sim_success.parquet` for T2.6, instead of ~2/3 being dropped at that merge. Logs
   to `logs/t2.5_dream_eval.log`; the acceptance command runs automatically at the end.
+- 2026-07-13T01:13:24Z: T2.5 COMPLETED, `EXIT_STATUS=0`. Ran `2026-07-12T21:17:42Z` ->
+  `2026-07-13T01:13:24Z`, ~3h56m wall clock for all 40 `(tier, checkpoint)` combinations
+  (50 dreams x horizon 200 each). `results/sim_success.parquet` untouched by this phase;
+  `results/dream_success.parquet` has exactly 2,000 rows, 400 per tier, 0 missing
+  classifier scores. `python -m dreamgrasp.eval.acceptance dream` ran clean at the end
+  (prints only; no hard gate in this phase). Per-tier mean `dream_success_prob` at
+  `step_005000`: tier_1 `0.130`, tier_2 `0.074`, tier_3 `0.200`, tier_4 `0.013`, tier_5
+  `0.342`.
+  **Flag for T2.6, not yet diagnosed:** tier_4 dream-success probabilities are anomalously
+  low across every checkpoint (`0.005`-`0.032`, full range in the log), despite tier_4
+  having the *best* fidelity of the whole family per the 2026-07-10 acceptance entry
+  (highest PSNR/SSIM, latest mean divergence step `23.88`, no collapse unlike tier_5). This
+  is counterintuitive and should be checked before trusting the trust-region chart's tier_4
+  point — possible causes not yet ruled out: a `--wm-tier` label/checkpoint-path mismatch
+  during the T2.5 loop, a classifier miscalibration specific to tier_4's dream frame
+  statistics, or a genuine dream-eval-loop artifact (e.g. proprio drift from the dynamics
+  state head) that fidelity's teacher-forced-rollout metric doesn't capture. Not
+  investigated further per scope (T2.5 launch/monitor only); holding before T2.6 per
+  instructions.
   Startup check: first W&B run `87z48btf` (`dream_eval_tier_1_smolvla_libero_step_005000`),
   sampled tasks are libero_spatial as expected (e.g. "pick up the black bowl ... place it
   on the plate"), classifier scoring live (`dream_success_prob` populated per row), GPU

@@ -38,8 +38,16 @@ def spearman_with_ci(
     return float(rho), float(lo), float(hi)
 
 
+def normalize_task(task: str) -> str:
+    """Canonical task id: sim_eval.py writes LIBERO's underscored slug (task.name);
+    dream_eval.py writes the LeRobotDataset's natural-language sentence for the same task.
+    Both collapse to the same string once whitespace becomes underscores."""
+    return task.strip().lower().replace(" ", "_")
+
+
 def success_rates(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     """Aggregate per (checkpoint, task): mean of the value column."""
+    df = df.assign(task=df["task"].map(normalize_task))
     return df.groupby(["checkpoint", "task"])[value_col].mean().reset_index()
 
 

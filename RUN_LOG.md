@@ -349,6 +349,8 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   --n-clips 8 --out report/figures/tier5_collapse.png`. The two PNGs generated during the
   diagnostic itself were not committed (regenerable output, not source).
 
+### T2.5 Dream Rollouts
+
 - 2026-07-12T17:17Z: Launched T2.5 in tmux session `t25_dream` on `umd-004061` from `main`
   at `5d21ec7`, per user approval to proceed with all five WM tiers as-is (tier 5 included
   despite its diagnosed collapse — see the 2026-07-10 decision note above). Command mirrors
@@ -357,6 +359,12 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   land on tasks that have a matching libero_spatial ground-truth row in
   `results/sim_success.parquet` for T2.6, instead of ~2/3 being dropped at that merge. Logs
   to `logs/t2.5_dream_eval.log`; the acceptance command runs automatically at the end.
+  Startup check: first W&B run `87z48btf` (`dream_eval_tier_1_smolvla_libero_step_005000`),
+  sampled tasks are libero_spatial as expected (e.g. "pick up the black bowl ... place it
+  on the plate"), classifier scoring live (`dream_success_prob` populated per row), GPU
+  `1819 MiB / 24570 MiB` at 34% utilization, 39C. T2.5 acceptance pending until all 40
+  (tier, checkpoint) combinations finish and `python -m dreamgrasp.eval.acceptance dream`
+  passes.
 - 2026-07-13T01:13:24Z: T2.5 COMPLETED, `EXIT_STATUS=0`. Ran `2026-07-12T21:17:42Z` ->
   `2026-07-13T01:13:24Z`, ~3h56m wall clock for all 40 `(tier, checkpoint)` combinations
   (50 dreams x horizon 200 each). `results/sim_success.parquet` untouched by this phase;
@@ -411,12 +419,6 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   (`tier_3/4__smolvla_libero_step_005000__seed{0,1}.mp4`) are on the GPU host under
   `results/dream_videos/` (already part of the real T2.5 output tree, not scratch) and on
   the Mac scratchpad; not otherwise committed. Still holding before T2.6.
-  Startup check: first W&B run `87z48btf` (`dream_eval_tier_1_smolvla_libero_step_005000`),
-  sampled tasks are libero_spatial as expected (e.g. "pick up the black bowl ... place it
-  on the plate"), classifier scoring live (`dream_success_prob` populated per row), GPU
-  `1819 MiB / 24570 MiB` at 34% utilization, 39C. T2.5 acceptance pending until all 40
-  (tier, checkpoint) combinations finish and `python -m dreamgrasp.eval.acceptance dream`
-  passes.
 
 ### T2.4 Success Classifier (outcome)
 
@@ -430,3 +432,74 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   `docs/classifier_confusion_matrix.csv`, `docs/classifier_metrics.json`. Note the 0.9817
   accuracy upper-bounds downstream dream-success claims per LIMITATIONS.md item 3, and the
   val split is a random video split (all suites), not a held-out-task split.
+
+### T2.6 Calibration Study
+
+- 2026-07-13T (approx): User approved proceeding to T2.6, with one addition: report
+  tier_4's rank correlation separately from its absolute dream-success scores, as a way to
+  distinguish the two open hypotheses from the T2.5 tier_4 investigation above
+  (classifier domain-gap vs. tier_4 being the more honest closed-loop renderer). Asked to
+  confirm no new GPU rollouts were needed before starting.
+- **Pre-flight check surfaced a real bug, not just a confirmation.** Ran
+  `dreamgrasp.eval.correlate.ranking_reliability` directly against the real
+  `sim_success.parquet`/`dream_success.parquet` and got `NaN` for all five tiers, not just
+  tier_4. Root cause: `sim_success.parquet`'s `task` column is LIBERO's underscored slug
+  (`task.name`, written by `sim_eval.py`), while `dream_success.parquet`'s `task` column is
+  the LeRobotDataset's natural-language sentence (written by `dream_eval.py`) — the two
+  T2.2/T2.5 pipelines never agreed on a task identifier, so `correlate.py`'s
+  `(checkpoint, task)` merge found zero overlapping rows for every checkpoint and tier.
+  Verified `task.replace(" ", "_")` reconciles all 8 dream tasks with their sim slugs
+  exactly, no unmatched tasks. Fixed at the shared `success_rates()` choke point in
+  `correlate.py` (new `normalize_task()`, commit `4202192`) rather than patching each
+  caller, since both `ranking_reliability` and `task_level_pearson` route through it.
+  Added regression tests using deliberately non-identical task strings per side (the
+  existing synthetic-data tests use matching strings and would never have caught this).
+  This is a code fix only — no parquet was regenerated, no GPU-hours spent; confirmed via
+  `pytest`/`ruff`/`mypy` on the Mac, then verified end-to-end on the GPU against the real
+  parquets.
+- 2026-07-13T (approx): Ran `python -m dreamgrasp.eval.correlate --wandb disabled` (real
+  parquets, RUNBOOK's exact T2.6 command) on `umd-004061` post-fix. In-distribution
+  (libero_spatial train, scoped automatically by the merge since dream only has spatial
+  rows) Spearman rho per tier: tier_1 `0.881` CI `[0.316,1.000]`, tier_2 `0.810` CI
+  `[0.291,1.000]`, tier_3 `0.595` CI `[-0.211,0.975]`, tier_4 `0.548` CI `[-0.291,1.000]`,
+  tier_5 `0.524` CI `[-0.215,1.000]`. Task-level Pearson at the best checkpoint
+  (`step_025000` by sim ground truth): `-0.492`. Chart written to
+  `report/figures/trust_region.png`. All CIs are wide (n=8 checkpoints), consistent with
+  the RUNBOOK's own robustness-check requirement rather than a red flag by itself.
+  **Tier_4, absolute vs. rank (the requested addition):** built a per-checkpoint table of
+  sim ground-truth success vs. tier_4 mean dream-success, sim-rank vs. dream-rank:
+
+  | checkpoint | sim_success | tier4_dream_prob | sim_rank | dream_rank |
+  |---|---:|---:|---:|---:|
+  | step_010000 | 0.0200 | 0.006725 | 1 | 2 |
+  | step_005000 | 0.0475 | 0.013047 | 2 | 6 |
+  | step_020000 | 0.1575 | 0.006749 | 3 | 3 |
+  | step_015000 | 0.1975 | 0.007704 | 4 | 4 |
+  | step_040000 | 0.2325 | 0.004258 | 5 | 1 |
+  | step_030000 | 0.2450 | 0.019065 | 6 | 7 |
+  | step_035000 | 0.2525 | 0.011824 | 7 | 5 |
+  | step_025000 | 0.2900 | 0.037008 | 8 | 8 |
+
+  Reading against the two open hypotheses: tier_4's rho (`0.548`) is a moderate positive
+  correlation — clearly not near-random noise (the best checkpoint by sim, `step_025000`,
+  is also ranked best by tier_4's dream scores), but it is markedly below tier_1/2's
+  `~0.8-0.9` and its worst individual miss is real (`step_040000`, mid-good by sim at
+  rank 5, is ranked *worst* by tier_4's dream scores at rank 1). This leans mildly toward
+  hypothesis (b) "still an informative, if compressed and noisy, signal" over (a) "pure
+  classifier domain-gap noise" — but the CI crosses zero and n=8 is small, so this is not
+  conclusive either way. Both hypotheses stay open for the report; recommend presenting
+  tier_4's point on the trust-region chart with this absolute-vs-rank caveat attached
+  rather than either trusting it at face value or discarding it.
+- **Two RUNBOOK T2.6 acceptance items remain unmet and would require new GPU rollouts —
+  not started, flagging for a decision:** (1) "held-out task results are included" —
+  `dream_success.parquet` has zero held-out-task rows because T2.5 used the default
+  `--split val` (in-distribution only); the merge above is therefore in-distribution-only
+  by construction, not a filtering choice. Adding held-out coverage means rerunning
+  `dream_eval` with `--split heldout --suite libero_spatial` (2 held-out spatial tasks x
+  8 checkpoints x 5 tiers x 50 dreams) — a new, smaller-but-real rollout phase, similar
+  structure/cost profile to T2.5 but roughly 1/4 the task count. (2) "robustness includes
+  at least two: N=20 vs 50, classifier threshold +/-0.1, T=100 vs 200" — the threshold
+  variant is analysis-only (free, re-threshold existing classifier probs), but N=20 and
+  T=100 both require fresh dream rollouts at different `--n-dreams`/`--horizon` values.
+  Holding on both pending the user's call; the in-distribution analysis and tier_4
+  write-up above are complete and required no new GPU-hours.

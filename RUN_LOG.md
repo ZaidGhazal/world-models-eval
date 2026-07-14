@@ -503,3 +503,60 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   T=100 both require fresh dream rollouts at different `--n-dreams`/`--horizon` values.
   Holding on both pending the user's call; the in-distribution analysis and tier_4
   write-up above are complete and required no new GPU-hours.
+- 2026-07-13T (approx): User approved (1) launching held-out dream rollouts
+  (`dream_eval --split heldout`), (2) the free classifier-threshold robustness variant on
+  existing data, (3) holding on N=20/T=100 reruns until held-out results are in. Also
+  requested the trust-region chart plot rho vs. measured fidelity with per-tier CI bars
+  and the tier_4 caveat carried explicitly, and flagged the in-distribution pattern
+  (tier_1/2 ranking best, correlation degrading with tier sophistication — not monotonic
+  with fidelity) as the current headline finding.
+- Implemented before running anything (commit `b6e1f9d`, analysis-only code, verified
+  with `pytest`/`ruff`/`mypy` and an end-to-end smoke test against synthetic parquets
+  before touching real data): `ranking_reliability(threshold=...)` binarizes
+  `dream_success_prob` at a given cutoff (classifier decision boundary is 0.5 in
+  probability space, since `success_classifier.py` uses `logits > 0`) for the free
+  threshold-robustness check; `dream_for_split()` partitions dream rows into
+  train/held-out via sim's `split` column (cross-referenced through `normalize_task()`
+  since dream/sim still use different task-string conventions); `correlate.py main()`
+  now always computes the in-distribution curve and additionally computes+plots a
+  held-out curve once any held-out dream rows exist (a no-op until this rollout lands);
+  `trust_region_chart()` gained `flag_tier`/`flag_note` to mark tier_4 with a starred
+  point and annotation rather than a plain unlabeled point.
+- Ran `python -m dreamgrasp.eval.correlate --threshold-sweep 0.4 0.6 --wandb disabled` on
+  the real parquets (in-distribution only, held-out not yet available). Continuous
+  probability (unchanged from before): tier_1 `0.881`, tier_2 `0.810`, tier_3 `0.595`,
+  tier_4 `0.548`, tier_5 `0.524`. At threshold `0.4`: tier_1 `0.857`, tier_2 `0.731`,
+  tier_3 `0.405`, **tier_4 `0.756` CI `[0.584,0.906]`** (notably higher and much tighter
+  than tier_4's continuous-prob CI, and the only tier whose CI doesn't cross zero at this
+  threshold), tier_5 `0.452`. At threshold `0.6`: tier_1 `0.786`, tier_2 `0.874`, tier_3
+  `0.619`, tier_4 `0.577` CI `[0.581,0.889]` (again tight, non-zero-crossing), tier_5
+  `0.429`. Reading: tier_4's ranking signal is stable and clearly positive once binarized,
+  more so than several other tiers — this leans further toward the "honest renderer"
+  hypothesis (b) from the earlier investigation, since a classifier-domain-gap-driven
+  near-random signal would not be expected to tighten and strengthen this consistently
+  under binarization. Task-level Pearson at the best checkpoint: `-0.492` (unchanged, uses
+  only in-distribution dream rows). Chart (in-distribution curve only, tier_4 starred)
+  written to `report/figures/trust_region.png` and confirmed rendering correctly on real
+  data — it visually shows the headline pattern: tier_1 (x~19.8, rho 0.881) and tier_2
+  (x~20.9, rho 0.810) outrank tier_3 (x~20.4, rho 0.595) and tier_4 (x~23.9, rho 0.548,
+  starred), while collapsed tier_5 (x~12.9, lowest fidelity) sits in between at rho
+  `0.524` — not monotonic with fidelity.
+- Launched held-out dream rollouts in tmux session `t26_dream_heldout` on `umd-004061`
+  from `main` at `b6e1f9d`. Command mirrors T2.5 exactly with `--split heldout` added
+  (2 held-out `libero_spatial` tasks, 100 episodes, vs. train's 8 tasks/320 episodes);
+  written to `scripts/run_t26_heldout.sh` and copied to the GPU rather than run as an
+  inline nested-quoted command, after a local shell-quoting bug (three levels of nested
+  quotes silently expanded `$tier`/`$ckpt` to empty on the local machine before reaching
+  the remote host) produced a broken command on the first launch attempt — caught before
+  anything executed remotely, no wasted GPU time. Appends to the same
+  `results/dream_success.parquet` (2,000 existing rows); logs to
+  `logs/t2.6_dream_heldout.log`; first W&B run `97dptur5`
+  (`dream_eval_tier_1_smolvla_libero_step_005000`); first dream's task
+  ("pick up the black bowl on the wooden cabinet and place it on the plate") confirmed
+  matching a held-out spatial task.
+  **Cost correction:** an earlier message in this session estimated held-out rollouts at
+  "roughly 1/4 the task count" of T2.5 and implied a proportionally shorter runtime — that
+  was wrong. `--n-dreams 50 --horizon 200` fixes the compute cost per combo regardless of
+  how many distinct tasks exist in the episode pool being sampled from; task count affects
+  sample diversity, not wall-clock. Expect a similar order of magnitude to T2.5's ~3h56m,
+  not a quarter of it. Holding for completion before drawing the final two-curve chart.

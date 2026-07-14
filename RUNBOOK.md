@@ -202,14 +202,32 @@ python -m dreamgrasp.eval.acceptance dream
 
 ## T2.6 Calibration Study
 
+T2.5's default `--split val` only covers in-distribution (train-task) dreams. Held-out
+coverage is a separate rollout with the same cost profile as T2.5 (cost is driven by
+`--n-dreams x --horizon`, not the number of distinct tasks in the split):
+
 ```bash
-scripts/run_study.sh
+scripts/run_t26_heldout.sh
 ```
+
+Then the analysis (in-distribution curve always; a second held-out curve is added
+automatically once held-out dream rows exist):
+
+```bash
+scripts/run_study.sh --threshold-sweep 0.4 0.6
+```
+
+`--threshold-sweep` is the free classifier-threshold +/-0.1 robustness check (binarizes
+`dream_success_prob` at each cutoff instead of averaging it continuously; the classifier's
+own train-time decision boundary is 0.5). N=20 vs 50 and T=100 vs 200 are not free — each
+requires a fresh rollout at that `--n-dreams`/`--horizon`.
 
 Produces:
 
-- `report/figures/trust_region.png`
-- reliability/fidelity summary in stdout
+- `report/figures/trust_region.png` (tier_4 is marked with a starred point + annotation —
+  see the 2026-07-13 RUN_LOG entries for why its absolute dream-success score and its rank
+  correlation should be read separately)
+- reliability/fidelity summary in stdout, split into in-distribution and held-out blocks
 
 Acceptance:
 

@@ -52,4 +52,20 @@
    independently-generated observations; it just cannot be regenerated bit-for-bit. Any
    N=20/T=100 robustness variant of this study therefore uses subsamples or fresh rollouts
    of the real data rather than attempting to reproduce a specific prior run.
+9. **Per-tier reliability estimates are not robust at this checkpoint count.** The
+   headline in-distribution result (tier_1/tier_2 clearly the most reliable, degrading
+   with tier sophistication: rho `0.881`/`0.810` vs. `0.595`/`0.548`/`0.524` at N=50,
+   T=200) does not survive either robustness axis in RUNBOOK's own check. Under N=20
+   (subsampling the same real dreams) tier_4's rho flips sign (`0.548` -> `-0.143`). Under
+   T=100 (a fresh, independent rollout) tier_1 and tier_2 -- the standout performers at
+   T=200 -- collapse to near-zero (`0.024`, `0.071`), while tier_3 becomes the (still
+   wide-CI) frontrunner. Both checks used the same real ground truth, the same classifier,
+   and the same code path; nothing here points to a bug. The likely explanation is
+   structural: with only 5 world-model tiers and 8 policy checkpoints, Spearman rho has
+   very little statistical power, and its point estimate is highly sensitive to which
+   samples/horizon happen to be used. **This study cannot support a confident claim about
+   which world-model tier ranks policies most reliably** — that would require materially
+   more policy checkpoints than this design's fixed 5-tier/8-checkpoint budget provides.
+   The trust-region chart should be read as illustrative of the method, not as a settled
+   ranking of these five tiers.
 

@@ -53,6 +53,17 @@ Pearson; in-distribution vs. held-out tasks.
 
 ### 3.1 Fidelity across tiers *(table + monotonicity check)*
 ### 3.2 The trust region *(headline figure: fidelity vs. ρ, two curves)*
+
+**This curve is not stable and should not be reported as a settled ranking.** At the
+design point (N=50, T=200), tier_1/tier_2 show the highest in-distribution reliability
+(rho `0.881`/`0.810`) and reliability appears to *degrade* with tier sophistication
+(tier_3/4/5: `0.595`/`0.548`/`0.524`) — not monotonic with fidelity. But neither robustness
+axis in the design (§3.4) reproduces this: subsampling to N=20 flips tier_4's sign
+(`0.548` -> `-0.143`), and an independent T=100 rollout collapses tier_1/tier_2 to
+near-zero (`0.024`/`0.071`) while tier_3 becomes the frontrunner. See LIMITATIONS.md item
+9: with only 5 tiers and 8 checkpoints, Spearman rho has too little statistical power for
+its point estimate to be trustworthy at any single configuration. Report this section as
+"the trust-region method, illustrated" rather than "these five tiers, ranked."
 ### 3.3 Held-out tasks (distribution shift)
 
 **Headline finding: dream evaluation fails silently under distribution shift.** On the two

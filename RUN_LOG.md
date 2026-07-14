@@ -666,3 +666,35 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   scaling with horizon) -- rough estimate ~1h20m for all 40 combos, to be confirmed once
   more combos land. Held-out numbers, the fixed chart, and both robustness results
   reported back to the user now; T=100 completion to follow.
+- 2026-07-14T08:05:36Z: T=100 rollout COMPLETED, `EXIT_STATUS=0`. Ran
+  `2026-07-14T05:59:15Z` -> `2026-07-14T08:05:36Z`, ~2h06m wall clock (a bit over half of
+  T2.5's ~3h56m at T=200, consistent with per-step compute plus a fixed per-combo
+  model-load overhead that doesn't shrink with horizon). All 40 train-split combos
+  completed; `results/dream_success_t100.parquet` has 2,000 rows (400/tier).
+- **The robustness check does not hold -- this is a reversal, not a shift, and it changes
+  what T2.6's headline finding should be.** `python -m dreamgrasp.eval.correlate --dream
+  results/dream_success_t100.parquet` gives in-distribution rho: tier_1 `0.024` CI
+  `[-0.836,0.846]` (was `0.881` at T=200), tier_2 `0.071` CI `[-0.753,0.926]` (was
+  `0.810`), tier_3 `0.571` CI `[-0.105,1.000]` (was `0.595`, the one tier that held up),
+  tier_4 `0.190` CI `[-0.644,0.923]` (was `0.548`), tier_5 `0.238` CI `[-0.544,0.946]`
+  (was `0.524`). Task-level Pearson: `-0.452` (was `-0.492`, comparatively stable). Chart
+  saved to `report/figures/trust_region_t100.png` for comparison against the T=200 chart
+  -- visually, nearly every CI now crosses zero and tier_1/tier_2, the standout performers
+  at T=200, are indistinguishable from noise at T=100.
+  **The T=200 "headline" (tier_1/2 clearly ahead, correlation degrading with tier
+  sophistication) is not something this study can assert with confidence.** It held at
+  T=200 and roughly held in direction (not magnitude) under the N=20 subsample, but it
+  does not survive a change in dream horizon at all -- tier_1 and tier_2 collapse to
+  near-zero while tier_3 becomes the (still uncertain) frontrunner. Combined with the N=20
+  finding that tier_4's sign itself was not stable, the pattern across both robustness
+  checks is the same: **per-tier Spearman rho estimates at n=8 checkpoints are not
+  robust to reasonable changes in experimental configuration**, in either direction (fewer
+  seeds or shorter horizon). This reads less like "tier_1/2 are genuinely more reliable"
+  and more like "this study's checkpoint count is too small to support a confident
+  tier-ranking claim at all" -- a structural power limitation of the 5-tier/8-checkpoint
+  design, not a data or code bug (both robustness reruns used the same fixed pipeline,
+  same real ground truth, same classifier). This should be logged as a first-class
+  limitation alongside items 7 and 8, and the T=200 trust-region chart should not be
+  presented as a stable finding without this caveat directly attached. Reporting this to
+  the user now, without unilaterally deciding whether T2.6 is "complete" -- their own
+  framing was "if they hold, T2.6 is complete," and they do not hold.

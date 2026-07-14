@@ -26,6 +26,16 @@ def test_ordering():
     assert rhos[0] < rhos[2], f"rho not increasing with target: {rhos}"
 
 
+def test_ranking_reliability_threshold_binarizes():
+    sim, dream = make_synthetic(1.0, n_ckpts=8, seed=4)
+    continuous = ranking_reliability(sim, dream)["synthetic"][0]
+    thresholded = ranking_reliability(sim, dream, threshold=0.5)["synthetic"][0]
+    # Both should recover a strong positive correlation for a near-perfect synthetic signal;
+    # binarizing shouldn't flip the sign even though it discards magnitude information.
+    assert continuous > 0.5
+    assert thresholded > 0.5
+
+
 def test_normalize_task_reconciles_sim_and_dream_conventions():
     """sim_eval.py writes LIBERO's underscored slug; dream_eval.py writes the
     LeRobotDataset's natural-language sentence for the same task (2026-07-13 finding:

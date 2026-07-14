@@ -560,3 +560,50 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   how many distinct tasks exist in the episode pool being sampled from; task count affects
   sample diversity, not wall-clock. Expect a similar order of magnitude to T2.5's ~3h56m,
   not a quarter of it. Holding for completion before drawing the final two-curve chart.
+- 2026-07-14T04:16:57Z: Held-out rollout COMPLETED, `EXIT_STATUS=0`. Ran
+  `2026-07-14T00:20:01Z` -> `2026-07-14T04:16:57Z`, ~3h57m wall clock (matches the
+  corrected estimate, not the earlier wrong "~1/4" guess). All 40 combos completed;
+  `results/dream_success.parquet` now has 4,000 rows total (800 per tier: 400 train +
+  400 held-out). Tier_4 stays anomalously low on held-out too (`0.0052`-`0.0224` across
+  checkpoints, same shape as train's `0.0043`-`0.0370`) -- consistent with a stable
+  tier_4 property rather than train-split-specific noise.
+- **Held-out result: a real, unexpected finding, not a bug.** Ran the full T2.6 analysis
+  (`python -m dreamgrasp.eval.correlate --threshold-sweep 0.4 0.6`) and every tier's
+  held-out Spearman rho came back `NaN`. Verified directly against `sim_success.parquet`
+  before trusting it: **every one of the 8 policy checkpoints has exactly 0/50 real
+  simulator successes on both held-out `libero_spatial` tasks** (800 real T2.2 rollouts,
+  all failures) -- sim ground truth has zero variance across checkpoints, so rank
+  correlation against it is mathematically undefined, not just weak. By contrast, tier_1's
+  dream-success scores on those same held-out episodes vary meaningfully by checkpoint
+  (`0.26`-`0.51`) -- the dream pipeline produces graded, checkpoint-dependent signal on
+  tasks where the real policy has a hard zero-success wall. This is itself informative:
+  under true distribution shift, dream evaluation cannot be validated against ground truth
+  here (there's nothing to rank against), and whatever signal the dreams show cannot be
+  trusted as "reliability" since it has no real counterpart to calibrate to.
+- **Chart bug found and fixed before treating any chart as final** (commit `b1ee7a7`):
+  the first held-out chart draw produced an empty "held-out" legend entry with no visible
+  points (matplotlib silently drops all-NaN series), which would read as a rendering
+  glitch or a hidden data overlap depending on the viewer -- misleading either way. Fixed
+  `correlate.py` to detect the all-NaN case and skip the phantom series, replacing it with
+  a direct red-italic annotation on the chart stating the reason ("held-out: rank
+  correlation undefined (0% real sim success across all checkpoints)"), plus the same
+  explanation printed to stdout. Verified with a smoke test reproducing the exact all-NaN
+  shape (synthetic sim/dream data, held-out success pinned to 0) before rerunning against
+  the real parquets.
+- **Final in-distribution numbers (unchanged from the pre-held-out run, confirming the fix
+  didn't disturb the working path):** continuous-probability rho: tier_1 `0.881`, tier_2
+  `0.810`, tier_3 `0.595`, tier_4 `0.548`, tier_5 `0.524`. Threshold-binarized (0.4/0.6):
+  tier_4 `0.756`/`0.577`, both tight CIs not crossing zero, still the standout robustness
+  result from the earlier entry. Task-level Pearson at the best checkpoint: `-0.492`.
+  Final chart at `report/figures/trust_region.png`: single in-distribution curve (CI bars
+  per tier), tier_4 starred with its caveat annotation, held-out explained via the red
+  annotation rather than an empty curve. The headline pattern is visually unambiguous:
+  tier_1 (rho `0.881`) and tier_2 (`0.810`) -- the least sophisticated tiers -- clearly
+  outrank tier_3 (`0.595`) and tier_4 (`0.548`), while collapsed tier_5 sits in between at
+  `0.524`; reliability is not monotonic with fidelity anywhere in this family.
+  T2.6's RUNBOOK acceptance items: Spearman rho + CIs per tier (done), task-level Pearson
+  (done), held-out task results included (done -- the data now exists and was analyzed;
+  the honest result is "undefined, and here is exactly why" rather than a number),
+  threshold +/-0.1 robustness (done, free). N=20 vs 50 and T=100 vs 200 remain not started,
+  per the user's instruction to hold on those until held-out results were in. Reporting
+  back now with the held-out numbers and the draft chart before proceeding further.

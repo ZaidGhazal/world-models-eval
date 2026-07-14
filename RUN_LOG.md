@@ -698,3 +698,55 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   presented as a stable finding without this caveat directly attached. Reporting this to
   the user now, without unilaterally deciding whether T2.6 is "complete" -- their own
   framing was "if they hold, T2.6 is complete," and they do not hold.
+- 2026-07-14T (approx): User approved a diagnostic follow-up (option 2: investigate before
+  deciding), free checks only, no new rollouts, no T2.7. Three questions:
+  (1) **Structural-truncation hypothesis: not supported.** Verified median real
+  steps-to-success on `libero_spatial` train (577 successes / 3,200 rollouts): median
+  `104`, mean `117.3` (close to the user's recalled `~115`), only `43.5%` of successes
+  complete within 100 steps -- so T=100 truncating dreams before task completion was a
+  reasonable mechanism to suspect. But per-tier absolute dream-success scores did **not**
+  collapse toward zero at T=100 -- they rose for every tier (pooled mean `0.185` ->
+  `0.236`; tier_1 `0.221`->`0.308`, tier_2 `0.082`->`0.138`, tier_3 `0.232`->`0.250`,
+  tier_4 `0.012`->`0.032`, tier_5 `0.378`->`0.452`). This rules out a floor-effect
+  explanation and points to something else: shorter rollouts give the compounding
+  dynamics model less time to visibly degrade (matches the WM fidelity curves, where
+  every tier's PSNR/SSIM/LPIPS worsens with horizon), so the classifier -- trained only on
+  real, coherent frames -- may score shorter dreams more favorably on *coherence* somewhat
+  independent of *task success*. If so, the classifier's score conflates two different
+  things, and horizon choice mechanically shifts that conflation.
+  (2) **Outlier-checkpoint hypothesis: partially supported, but not by the plateau group as
+  hypothesized.** Leave-one-out analysis (tier_1, tier_2, T=200 vs T=100) found no single
+  checkpoint exclusion reconciles the two conditions -- the closest case (tier_1 excluding
+  `step_025000`) still only brings T=100's rho from `0.024` to `0.536`, nowhere near
+  T=200's `0.881`/`0.964`. Direct rank comparison shows a more specific pattern: at T=200,
+  tier_1's dream-rank matches sim-rank exactly for the four clearly-separated bottom
+  checkpoints (`step_005000/010000/015000/020000`, sim success `2.0%-19.8%`) and only
+  reorders within the four near-tied top checkpoints (`step_025000/030000/035000/040000`,
+  sim success `23.2%-29.0%`, plausibly within Wilson-CI noise at n=50 sim rollouts each) --
+  consistent with the plateau hypothesis *for T=200's own internal noise*. But the
+  T=200->T=100 collapse is not that same ambiguity persisting; it's specific individual
+  checkpoints inverting outright. Most strikingly: `step_025000` -- tier_1's *best* real
+  checkpoint (`29.0%` sim success) -- is tier_1's *worst*-scoring dream checkpoint at T=100
+  (dream rank 1 of 8), while it was mid-pack at T=200 (rank 6). Tier_2 shows an analogous
+  single-checkpoint inversion (`step_040000`, sim rank 5, becomes dream rank 1 at T=100;
+  `step_005000`, sim rank 2, becomes dream rank 8). This is a more serious phenomenon than
+  tie-breaking noise among near-equal checkpoints -- specific checkpoints' dream-based
+  quality assessment flips across horizon choice.
+  (3) **Task-level Pearson: comparatively stable, confirmed.** At the best checkpoint
+  (`step_025000`): T=200/N=50 `-0.492`, T=200/N=20 (subsample) `-0.297`, T=100/N=50
+  `-0.452`. All three conditions agree in sign and rough magnitude (moderately negative),
+  unlike the per-tier checkpoint-ranking Spearman rho, which swung from strongly positive
+  to near-zero or negative depending on condition. Worth separately noting (not asked, but
+  visible in the data): task-level Pearson being consistently *negative* means dream scores
+  and sim success are, if anything, inversely related across the 8 tasks for this
+  checkpoint -- a finding on its own, independent of the robustness question, that the
+  earlier T2.6 entries already surfaced without much comment.
+  **Net read:** the T=100 collapse is not an artifact of dreams being cut off before task
+  completion (ruled out), and it is not cleanly attributable to one or two ambiguous
+  checkpoints (partially ruled out -- no single exclusion closes the gap). The most
+  literal reading of the evidence is that per-tier checkpoint-ranking Spearman rho, at
+  n=8 checkpoints, is sensitive to individual checkpoints' dream scores in a way that
+  itself varies with horizon choice -- and that horizon choice plausibly interacts with
+  classifier coherence-vs-success conflation from finding (1). Task-level Pearson is the
+  one reliability statistic in this study that reads as robust across every condition
+  tested. No rollouts launched; reporting back per instructions.

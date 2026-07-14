@@ -31,4 +31,25 @@
    engaged but displaced past the target (e.g. a plate dragged off the counter). All sampled
    failures ran the full 400 steps with the scene largely undisturbed — no dropped-object or
    catastrophic cases were observed.
+7. **Dream evaluation fails silently under distribution shift.** On the two held-out
+   `libero_spatial` tasks, every one of the 8 policy checkpoints scored 0/50 real simulator
+   successes (800 rollouts, zero successes — a hard generalization wall, not noise), so
+   Spearman rho between dream and sim success is mathematically undefined there for every
+   world-model tier: ground truth has zero variance to rank against. The dream pipeline does
+   not surface this — it produces smoothly varying, checkpoint-dependent success scores on
+   these same held-out episodes (e.g. tier_1 ranges 0.26-0.51 across checkpoints) that look
+   exactly like the graded, informative signal it produces in-distribution. A practitioner
+   relying only on dreamed rollouts would see confident, differentiated scores with no
+   indication that the underlying policy has completely failed to generalize. See
+   `report/report.md` section 3.3.
+8. **Dream rollouts are not bit-reproducible.** `seed_everything()` does not set CUDA
+   determinism flags (`torch.backends.cudnn.deterministic` / `torch.use_deterministic_algorithms`),
+   so rerunning `dream_eval.py` with the same seed reproduces the episode/task selection
+   exactly but not the final classifier-scored outcome — tiny per-step floating-point
+   differences compound over the 200-step autoregressive rollout into effectively
+   uncorrelated results (confirmed empirically 2026-07-14; no code changed between the
+   original run and the mismatched rerun). Existing dream data remains valid as real,
+   independently-generated observations; it just cannot be regenerated bit-for-bit. Any
+   N=20/T=100 robustness variant of this study therefore uses subsamples or fresh rollouts
+   of the real data rather than attempting to reproduce a specific prior run.
 

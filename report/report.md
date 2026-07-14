@@ -53,7 +53,22 @@ Pearson; in-distribution vs. held-out tasks.
 
 ### 3.1 Fidelity across tiers *(table + monotonicity check)*
 ### 3.2 The trust region *(headline figure: fidelity vs. ρ, two curves)*
-### 3.3 Held-out tasks *(distribution shift)*
+### 3.3 Held-out tasks (distribution shift)
+
+**Headline finding: dream evaluation fails silently under distribution shift.** On the two
+held-out `libero_spatial` tasks, every one of the 8 policy checkpoints scored 0/50 real
+simulator successes (800 held-out rollouts total, zero successes) — a hard generalization
+wall, not noise. Spearman rho between dream and sim success is therefore mathematically
+undefined for every world-model tier: ground truth has zero variance across checkpoints, so
+there is nothing to rank correlation against. Meanwhile the dream pipeline does not go
+quiet or flag low confidence here — it produces smoothly varying, checkpoint-dependent
+success probabilities on these same episodes (e.g. tier_1 ranges `0.26`-`0.51` across
+checkpoints) that look exactly like the graded signal it produces on in-distribution tasks
+where the correlation is real. A practitioner watching only dreamed rollouts, with no
+ground-truth channel, would see confident-looking, differentiated scores and have no signal
+that the underlying policy has completely failed to generalize. This is the calibration
+study's central caution: dream-based evaluation is not self-diagnosing under distribution
+shift — its failure mode here is silent, not a visible drop in confidence.
 ### 3.4 Robustness *(N=20 vs 50; classifier threshold ±0.1; T=100 vs 200)*
 
 ## 4. Limitations

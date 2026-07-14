@@ -607,3 +607,62 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   threshold +/-0.1 robustness (done, free). N=20 vs 50 and T=100 vs 200 remain not started,
   per the user's instruction to hold on those until held-out results were in. Reporting
   back now with the held-out numbers and the draft chart before proceeding further.
+- 2026-07-14T (approx): User approved the two remaining robustness checks with one
+  condition: check feasibility from existing artifacts first (N=20 by subsampling the 50
+  existing dreams per combo; T=100 by truncating saved dream videos and rescoring) before
+  launching anything new, and only launch fresh rollouts for whichever genuinely isn't
+  feasible for free. Also asked for the held-out result to be framed as a first-class
+  finding, not a footnote.
+- **T=100 checked: not feasible for free.** `results/dream_videos/` has only 7 files total
+  (4 are the manual tier_3/4 diagnostic videos from the earlier investigation, 3 are
+  unrelated Type-1 `dry_run`/`tiny` artifacts) -- the bulk 4,000-row T2.5/T2.6 runs never
+  passed `--save-videos`, so there is nothing to truncate and rescore. Confirmed before
+  launching anything.
+- **N=20 checked: subsampling is feasible, but only after an important correction to how I
+  verified it.** Before trusting "first 20 of the existing 50 dreams" as equivalent to a
+  fresh N=20 run, tried to confirm reproducibility empirically: reran one real combo
+  (tier_1, `step_005000`, train) at `--n-dreams 20` three times. All three fresh reruns
+  matched each other exactly, but none matched the first 20 of the original bulk run's 50
+  dreams for that same combo -- task/episode selection matched almost perfectly (the local
+  `rng.integers(len(ds))` draw sequence is a genuine deterministic prefix, confirmed
+  directly), but final classifier probabilities on matching tasks were essentially
+  uncorrelated (e.g. one dream went `0.75` -> `0.001` between the original run and a rerun
+  of the identical seeded command). Checked `git log 5d21ec7..HEAD` across every file
+  `dream_eval.py` touches (`dream_eval.py`, `sim_eval.py`, `dynamics.py`, `vae.py`,
+  `success_classifier.py`, `loader.py`, `seeding.py`) -- zero commits, ruling out a code
+  change as the explanation. Root cause: `seed_everything()` in
+  `dreamgrasp/utils/seeding.py` seeds Python/numpy/torch RNGs but never sets
+  `torch.backends.cudnn.deterministic` or `torch.use_deterministic_algorithms`, so
+  non-deterministic CUDA kernels introduce tiny per-step floating-point differences that
+  compound over the 200-step autoregressive `dream_rollout` loop into effectively
+  uncorrelated final outcomes -- consistent with everything already known about how
+  sensitive these dynamics models are to compounding error (tier_5's collapse). Logged as
+  LIMITATIONS.md item 8: existing dream data remains valid (each dream is a real, singular
+  observation regardless of reproducibility), but a "fresh" rerun would not have been a
+  trustworthy comparison basis for an N=20 check even if run -- subsampling the real,
+  already-collected `seed<20` dreams (new `cap_dreams()` in `correlate.py`, commit
+  `ca3b96f`) is the methodologically correct free version, not an approximation of
+  something better we chose not to do.
+- Ran `python -m dreamgrasp.eval.correlate --n-dreams-cap 20` on the real data.
+  In-distribution N=20 (subsampled) vs N=50: tier_1 `0.857` (was `0.881`), tier_2 `0.690`
+  (was `0.810`), tier_3 `0.405` (was `0.595`), **tier_4 `-0.143` CI `[-0.772,0.671]` (was
+  `0.548`, sign flip)**, tier_5 `0.357` (was `0.524`). Every tier's magnitude shrinks
+  toward zero at N=20 as expected from a smaller sample, but tier_4 is the only one whose
+  point estimate crosses zero -- its already-wide CI at N=50 was warning of exactly this
+  fragility. The headline pattern (tier_1/2 clearly ahead of tier_3/4/5) holds directionally
+  at N=20; tier_4's specific point estimate does not hold up, reinforcing (not
+  contradicting) the standing caution to not read tier_4's rho at face value.
+- **T=100: launched** (the one check that genuinely needed new GPU compute, pre-approved).
+  In tmux `t26_horizon100` on `umd-004061` from `main` at `3875a5f`, via new
+  `scripts/run_t26_horizon100.sh`: same 40 `(tier, checkpoint)` combinations, `--n-dreams
+  50 --horizon 100`, train split only (held-out is skipped here -- its ground truth has
+  zero variance regardless of dream horizon, so a held-out T=100 rerun would be
+  uninformative for the same structural reason as the T=200 result). Writes to a separate
+  `results/dream_success_t100.parquet` rather than appending to the main file, since mixing
+  horizons under shared seed values would break `cap_dreams`/`ranking_reliability`'s
+  per-combo grouping assumptions. GPU idle before launch (155 MiB). First combo (tier_1,
+  `step_005000`) took ~1m56s wall clock, roughly proportional to T2.5's ~3.5min/combo at
+  T=200 (less than half, plausibly reflecting fixed per-combo model-load overhead not
+  scaling with horizon) -- rough estimate ~1h20m for all 40 combos, to be confirmed once
+  more combos land. Held-out numbers, the fixed chart, and both robustness results
+  reported back to the user now; T=100 completion to follow.

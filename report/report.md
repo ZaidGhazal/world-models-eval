@@ -6,9 +6,21 @@
 
 World-model-based policy evaluation promises cheap, safe benchmarking of robot policies, but
 prior work reports results at a single world-model quality point. We train a controlled family
-of five world models of increasing fidelity and measure, at each tier, how reliably dreamed
-rollouts rank real policy checkpoints — producing a quality→reliability calibration curve and
-an open single-GPU harness. **(headline number + CI here)**
+of five world models of increasing fidelity and dream-evaluate eight policy checkpoints against
+each, calibrated against 12,000 real simulator rollouts. Two findings hold up under scrutiny.
+First, dream-based evaluation fails *silently* under distribution shift: on held-out tasks every
+checkpoint has a 0% real success rate, yet the dream pipeline still produces smoothly varying,
+checkpoint-differentiated scores that give no indication anything has gone wrong — there is no
+drop in confidence to notice. Second, our evidence is consistent with the success classifier
+partly scoring dream *coherence* rather than task *success*: shortening the dream horizon raises
+scores at every world-model tier even as it gives the compounding dynamics model less time to
+visibly degrade, corroborated by a persistently negative dream-vs-sim task-level correlation and
+by individual checkpoints inverting rank across horizon choice. Against this backdrop, per-tier
+rank correlation between dream and real success is not stable under robustness checks (N=20 vs.
+50 seeds; T=100 vs. 200 steps) at our study's n=8 checkpoints, so we report our tier-reliability
+curve as an illustration of the method rather than a settled ranking of these five tiers. We
+release the full harness — data pipeline, policy training, the five-tier world-model family,
+dream evaluation, and analysis — as a single-GPU-reproducible open pipeline.
 
 ## 1. Introduction
 
@@ -51,36 +63,67 @@ Pearson; in-distribution vs. held-out tasks.
 
 ## 3. Results
 
-### 3.1 Fidelity across tiers *(table + monotonicity check)*
-### 3.2 The trust region *(headline figure: fidelity vs. ρ, two curves)*
+### 3.1 Held-out tasks: dream evaluation fails silently under distribution shift
+
+On the two held-out `libero_spatial` tasks, every one of the 8 policy checkpoints scored 0/50
+real simulator successes (800 held-out rollouts total, zero successes) — a hard generalization
+wall, not noise. Spearman rho between dream and sim success is therefore mathematically
+undefined for every world-model tier: ground truth has zero variance across checkpoints, so
+there is nothing to rank correlation against. Meanwhile the dream pipeline does not go quiet or
+flag low confidence here — it produces smoothly varying, checkpoint-dependent success
+probabilities on these same episodes (e.g. tier_1 ranges `0.26`-`0.51` across checkpoints) that
+look exactly like the graded signal it produces on in-distribution tasks where the correlation
+is real. A practitioner watching only dreamed rollouts, with no ground-truth channel, would see
+confident-looking, differentiated scores and have no signal that the underlying policy has
+completely failed to generalize. This is the calibration study's central caution: dream-based
+evaluation is not self-diagnosing under distribution shift — its failure mode here is silent,
+not a visible drop in confidence.
+
+### 3.2 Evidence for a coherence/success conflation in the classifier
+
+Shortening the dream horizon from T=200 to T=100 raised mean dream-success scores at every
+world-model tier, not just some: pooled mean rose `0.185` -> `0.236`, and every individual tier
+rose with it (e.g. tier_1 `0.221` -> `0.308`, tier_5 `0.378` -> `0.452`). This is the opposite of
+what a naive truncation account predicts — median real steps-to-success on `libero_spatial` is
+`104` (mean `117.3`), so a 100-step horizon cuts off more than half of what would eventually be
+real successes, and a floor effect from that truncation should push scores *down*, not up.
+Instead, every tier's world-model fidelity independently degrades with horizon without exception
+(§3.3): PSNR and SSIM fall and LPIPS rises from horizon 1 to 32 for all five tiers. Taken
+together, this evidence is consistent with the classifier partly scoring dream *coherence* — how
+visually plausible the rollout looks — rather than purely the depicted task *outcome*: a shorter
+dream gives the compounding dynamics model less time to visibly diverge, and a more
+coherent-looking failure may score higher than a genuinely successful but visually degraded
+rollout.
+
+Two further observations corroborate this reading without isolating the mechanism directly.
+Task-level Pearson (dream vs. sim success across the 8 in-distribution tasks, at the best
+checkpoint) is consistently negative across every condition tested: `-0.492` (T=200, N=50),
+`-0.297` (T=200, N=20 subsample), `-0.452` (T=100, N=50) — dream scores and real task success
+are, if anything, inversely related task-by-task, which a pure success signal would not produce.
+And the single most dramatic checkpoint-level swing in the study is a rank inversion under
+horizon change alone: `step_025000`, tier_1's *best* real checkpoint (`29.0%` sim success), is
+tier_1's *worst*-scoring dream checkpoint at T=100 (dream rank 1 of 8), while it sat mid-pack
+(rank 6 of 8) at T=200.
+
+We have not directly tested the coherence-conflation mechanism — the observations above are
+consistent with it but do not isolate it from other explanations. §3.5 proposes a direct test.
+
+### 3.3 Fidelity across tiers *(table + monotonicity check — to be written next)*
+
+### 3.4 The trust region, illustrated — not a ranking
 
 **This curve is not stable and should not be reported as a settled ranking.** At the
 design point (N=50, T=200), tier_1/tier_2 show the highest in-distribution reliability
 (rho `0.881`/`0.810`) and reliability appears to *degrade* with tier sophistication
 (tier_3/4/5: `0.595`/`0.548`/`0.524`) — not monotonic with fidelity. But neither robustness
-axis in the design (§3.4) reproduces this: subsampling to N=20 flips tier_4's sign
+axis in the design (§3.5) reproduces this: subsampling to N=20 flips tier_4's sign
 (`0.548` -> `-0.143`), and an independent T=100 rollout collapses tier_1/tier_2 to
 near-zero (`0.024`/`0.071`) while tier_3 becomes the frontrunner. See LIMITATIONS.md item
 9: with only 5 tiers and 8 checkpoints, Spearman rho has too little statistical power for
 its point estimate to be trustworthy at any single configuration. Report this section as
 "the trust-region method, illustrated" rather than "these five tiers, ranked."
-### 3.3 Held-out tasks (distribution shift)
 
-**Headline finding: dream evaluation fails silently under distribution shift.** On the two
-held-out `libero_spatial` tasks, every one of the 8 policy checkpoints scored 0/50 real
-simulator successes (800 held-out rollouts total, zero successes) — a hard generalization
-wall, not noise. Spearman rho between dream and sim success is therefore mathematically
-undefined for every world-model tier: ground truth has zero variance across checkpoints, so
-there is nothing to rank correlation against. Meanwhile the dream pipeline does not go
-quiet or flag low confidence here — it produces smoothly varying, checkpoint-dependent
-success probabilities on these same episodes (e.g. tier_1 ranges `0.26`-`0.51` across
-checkpoints) that look exactly like the graded signal it produces on in-distribution tasks
-where the correlation is real. A practitioner watching only dreamed rollouts, with no
-ground-truth channel, would see confident-looking, differentiated scores and have no signal
-that the underlying policy has completely failed to generalize. This is the calibration
-study's central caution: dream-based evaluation is not self-diagnosing under distribution
-shift — its failure mode here is silent, not a visible drop in confidence.
-### 3.4 Robustness *(N=20 vs 50; classifier threshold ±0.1; T=100 vs 200)*
+### 3.5 Robustness, in full *(N=20 vs 50; classifier threshold ±0.1; T=100 vs 200 — to be written next)*
 
 ## 4. Limitations
 

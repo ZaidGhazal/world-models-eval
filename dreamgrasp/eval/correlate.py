@@ -81,6 +81,13 @@ def ranking_reliability(
     return out
 
 
+def cap_dreams(dream: pd.DataFrame, n: int) -> pd.DataFrame:
+    """Subsample to the first `n` dreams (by seed) per (checkpoint, wm_tier) -- the free
+    N=20-vs-50 robustness check, using already-collected dreams rather than a fresh rerun
+    (dream_eval.py is not bit-reproducible across invocations; see RUN_LOG 2026-07-14)."""
+    return dream[dream["seed"] < n]
+
+
 def dream_for_split(dream: pd.DataFrame, sim: pd.DataFrame, suite: str, split: str) -> pd.DataFrame:
     """Subset dream rows whose task belongs to `split` (e.g. "train" vs "heldout") within
     `suite`, matching sim's task naming via normalize_task since dream/sim use different
@@ -207,6 +214,22 @@ def main() -> None:
         metavar="T",
         help="also report rho using dream_success_prob binarized at each threshold (robustness check)",
     )
+    parser.add_argument(
+        "--n-dreams-cap",
+        type=int,
+        default=None,
+        metavar="N",
+        help=(
+            "also report rho using only seed<N dreams per (checkpoint, tier) -- the N=20 vs 50 "
+            "robustness check, done by subsampling already-collected dreams rather than a fresh "
+            "rerun. dream_eval.py's rollouts are not bit-reproducible across invocations even "
+            "with a fixed seed (see RUN_LOG 2026-07-14): seed_everything() does not set CUDA "
+            "determinism flags, so tiny per-step float differences compound over the 200-step "
+            "autoregressive rollout. A 'fresh' N=20 run would therefore not reproduce a specific "
+            "N=20 prefix of the existing N=50 data anyway -- subsampling the real, already-"
+            "collected dreams is the methodologically sound free version, not an approximation."
+        ),
+    )
     parser.add_argument("--out", type=Path, default=REPO_ROOT / "report" / "figures" / "trust_region.png")
     parser.add_argument("--suite", default="libero_spatial", help="suite used to split dream rows by task")
     parser.add_argument("--wandb", default="online", choices=["online", "offline", "disabled"])
@@ -234,6 +257,11 @@ def main() -> None:
             print(f"-- classifier threshold={t} (dream success rate, binarized) --")
             for tier, (rho, lo, hi) in ranking_reliability(sim, dream_train, threshold=t).items():
                 print(f"{tier}: rho={rho:.3f} CI=[{lo:.3f},{hi:.3f}]")
+    if args.n_dreams_cap:
+        n = args.n_dreams_cap
+        print(f"-- n_dreams={n} (subsample of existing seed<{n} dreams per checkpoint/tier) --")
+        for tier, (rho, lo, hi) in ranking_reliability(sim, cap_dreams(dream_train, n)).items():
+            print(f"{tier}: rho={rho:.3f} CI=[{lo:.3f},{hi:.3f}]")
     best = success_rates(sim, "success").groupby("checkpoint")["success"].mean().idxmax()
     print(f"task-level Pearson (best={best}): {task_level_pearson(sim, dream_train, best):.3f}")
 

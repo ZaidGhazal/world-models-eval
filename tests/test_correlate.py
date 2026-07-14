@@ -2,7 +2,7 @@
 
 import pandas as pd
 
-from dreamgrasp.eval.correlate import make_synthetic, normalize_task, ranking_reliability
+from dreamgrasp.eval.correlate import cap_dreams, make_synthetic, normalize_task, ranking_reliability
 
 
 def test_recovers_high_correlation():
@@ -34,6 +34,20 @@ def test_ranking_reliability_threshold_binarizes():
     # binarizing shouldn't flip the sign even though it discards magnitude information.
     assert continuous > 0.5
     assert thresholded > 0.5
+
+
+def test_cap_dreams_keeps_only_low_seeds_per_checkpoint_tier():
+    dream = pd.DataFrame(
+        [
+            {"checkpoint": ckpt, "task": "t", "wm_tier": tier, "seed": s, "dream_success_prob": 0.5}
+            for ckpt in ["A", "B"]
+            for tier in ["tier_1", "tier_2"]
+            for s in range(5)
+        ]
+    )
+    capped = cap_dreams(dream, 2)
+    assert set(capped["seed"].unique()) == {0, 1}
+    assert len(capped) == 2 * 2 * 2  # 2 checkpoints x 2 tiers x seeds {0,1}
 
 
 def test_normalize_task_reconciles_sim_and_dream_conventions():

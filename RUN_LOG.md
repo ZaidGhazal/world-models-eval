@@ -750,3 +750,16 @@ This log records real Type 2 execution evidence. Tiny and dry-run outputs do not
   classifier coherence-vs-success conflation from finding (1). Task-level Pearson is the
   one reliability statistic in this study that reads as robust across every condition
   tested. No rollouts launched; reporting back per instructions.
+- 2026-07-14T (approx): **T2.6 ACCEPTED (user decision).** Not accepted as "the trust-region
+  ranking of five tiers is reliable" -- that claim did not survive robustness testing and
+  is not being asserted. Accepted on a reframed basis: the study's primary, statistically
+  solid findings are (1) the held-out silent-failure result (2026-07-13/14 entries above)
+  and (2) the classifier coherence-vs-success conflation surfaced by the T=100 diagnostic
+  just above (scores rise at shorter horizon across every tier; corroborated by task-level
+  Pearson's consistent negative sign and the `step_025000` rank inversion). Per-tier
+  Spearman rho at n=8 checkpoints is retained as an illustrative method demonstration, not
+  a settled ranking, with every robustness result (N=20, T=100, threshold sweep) reported
+  honestly per LIMITATIONS.md items 8-9. The T=200 trust-region chart stays in the report
+  with those caveats attached rather than being redrawn or hidden. Proceeding to T2.7:
+  report draft first, then Space, then HF pushes, each requiring the user's individual
+  approval as originally specified in RUNBOOK.md.

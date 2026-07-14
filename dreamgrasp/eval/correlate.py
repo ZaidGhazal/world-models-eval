@@ -238,11 +238,19 @@ def main() -> None:
     print(f"task-level Pearson (best={best}): {task_level_pearson(sim, dream_train, best):.3f}")
 
     rel_heldout = None
+    heldout_has_signal = False
     if len(dream_heldout):
         print("== held-out (distribution shift) ==")
         rel_heldout = ranking_reliability(sim, dream_heldout)
+        heldout_has_signal = any(np.isfinite(r[0]) for r in rel_heldout.values())
         for tier, (rho, lo, hi) in rel_heldout.items():
             print(f"{tier}: rho={rho:.3f} CI=[{lo:.3f},{hi:.3f}]")
+        if not heldout_has_signal:
+            print(
+                "NOTE: held-out rho is undefined for every tier because sim ground-truth "
+                "success has zero variance across checkpoints on the held-out task(s) -- "
+                "not a data or merge bug; see per-checkpoint sim success rates."
+            )
     else:
         print("== held-out (distribution shift): no held-out dream rows yet, skipping ==")
 
@@ -260,8 +268,22 @@ def main() -> None:
             flag_tier="tier_4",
             flag_note="tier_4: low absolute\ndream-success, see caveat",
         )
-        if rel_heldout:
+        if rel_heldout and heldout_has_signal:
             trust_region_chart(rel_heldout, fid, args.out, label="held-out", fig=fig, flag_tier="tier_4")
+        elif rel_heldout:
+            # All-NaN rho: don't plot an empty "held-out" series with no points (misleading
+            # legend entry) -- state the reason directly on the chart instead.
+            fig.axes[0].text(
+                0.02,
+                0.02,
+                "held-out: rank correlation undefined\n(0% real sim success across all checkpoints)",
+                transform=fig.axes[0].transAxes,
+                fontsize=8,
+                style="italic",
+                color="firebrick",
+                verticalalignment="bottom",
+            )
+            fig.savefig(args.out, dpi=150, bbox_inches="tight")
         print(f"chart -> {args.out}")
     import wandb
 
